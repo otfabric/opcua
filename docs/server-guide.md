@@ -1,0 +1,442 @@
+# Server Development Guide
+
+> Building OPC-UA servers with the `github.com/otfabric/opcua/server` package.
+
+---
+
+## Minimal Server
+
+A working server needs at least an endpoint and a security configuration:
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+
+    "github.com/otfabric/opcua/server"
+    "github.com/otfabric/opcua/ua"
+)
+
+func main() {
+    s := server.New(
+        server.EndPoint("localhost", 4840),
+        server.EnableSecurity("None", ua.MessageSecurityModeNone),
+        server.EnableAuthMode(ua.UserTokenTypeAnonymous),
+    )
+
+    if err := s.Start(context.Background()); err != nil {
+        log.Fatal(err)
+    }
+    defer s.Close()
+
+    log.Println("Server running on opc.tcp://localhost:4840")
+    select {} // Block forever
+}
+```
+
+This creates a server with:
+- Standard OPC-UA namespace (namespace 0) auto-populated with `Server`, `ServerStatus`, `CurrentTime`, etc.
+- No encryption (suitable for development only)
+- Anonymous authentication
+
+### Server Options
+
+| Option | Purpose |
+|--------|---------|
+| `EndPoint(host, port)` | Listen address (can be called multiple times) |
+| `EnableSecurity(policy, mode)` | Register a security policy + mode combination |
+| `EnableAuthMode(tokenType)` | Enable an authentication mechanism |
+| `Certificate(cert)` | DER-encoded X.509 certificate |
+| `PrivateKey(key)` | RSA private key |
+| `ServerName(name)` | Human-readable name |
+| `ManufacturerName(name)` | Manufacturer metadata |
+| `ProductName(name)` | Product metadata |
+| `SoftwareVersion(version)` | Version string |
+| `SetLogger(logger)` | Custom `logger.Logger` interface |
+| `WithAccessController(ac)` | Custom authorization logic |
+
+---
+
+## Namespaces
+
+The server's address space is split into namespaces. Namespace 0 is the standard OPC-UA namespace (auto-populated). Your application data lives in custom namespaces (index 1+).
+
+Two implementations are provided:
+
+### NodeNameSpace — Full OPC-UA Modeling
+
+Use `NodeNameSpace` when you need the full OPC-UA information model: complex type hierarchies, custom references, methods, events.
+
+```go
+// Create a node-based namespace
+ns := server.NewNodeNameSpace(s, "http://example.com/myapp")
+
+// Create a folder to organize nodes
+folder := server.NewFolderNode(
+    ua.NewNumericNodeID(ns.ID(), 1001),
+    "Devices",
+)
+ns.AddNode(folder)
+
+// Add a reference from the Objects folder to our new folder
+ns.Objects().AddRef(folder, id.HasComponent, true)
+
+// Create a variable with a dynamic value
+tempNode := server.NewVariableNode(
+    ua.NewNumericNodeID(ns.ID(), 1002),
+    "Temperature",
+    func() *ua.DataValue {
+        return server.DataValueFromValue(readSensor())
+    },
+)
+ns.AddNode(tempNode)
+folder.AddRef(tempNode, id.HasComponent, true)
+```
+
+**Best for:** Industrial automation, device models, complex type definitions, methods, events.
+
+### MapNamespace — Simple Key-Value Mapping
+
+Use `MapNamespace` for straightforward data mapping without OPC-UA modeling overhead. It automatically maps Go types to OPC-UA types.
+
+```go
+// Create a map-based namespace
+data := server.NewMapNamespace(s, "http://example.com/sensors")
+
+// Set values directly — types are auto-detected
+data.SetValue("temperature", 23.5)      // float64
+data.SetValue("pressure", int64(1013))   // int64
+data.SetValue("active", true)            // bool
+data.SetValue("location", "Lab-2")       // string
+
+// Update a value (triggers change notifications to subscribers)
+data.SetValue("temperature", 24.1)
+
+// Listen for writes from OPC-UA clients
+go func() {
+    for key := range data.ExternalNotification {
+        val := data.GetValue(key)
+        log.Printf("Client changed %s to %v", key, val)
+    }
+}()
+```
+
+**Supported types:** `string`, `int` (stored as `int64`), `float64`, `bool`, `time.Time`
+
+**Best for:** IoT, sensor data, edge devices, minimal overhead.
+
+### Choosing Between Them
+
+| Feature | NodeNameSpace | MapNamespace |
+|---------|--------------|--------------|
+| Node modeling | Full (objects, variables, types, references) | Auto-generated from keys |
+| Methods | Supported via `RegisterMethod` | Not supported |
+| Events | Full support via `EmitEvent` | Basic support |
+| Custom references | Yes | `HasComponent` only |
+| Type system | Complete OPC-UA types | Auto-detected Go types |
+| Memory | Higher (full node graph) | Lower (simple map) |
+| Setup complexity | More code | Minimal |
+
+You can mix both in the same server — use `NodeNameSpace` for complex subsystems and `MapNamespace` for simple data feeds.
+
+---
+
+## Adding Custom Nodes
+
+### Variable Nodes
+
+Variable nodes hold data values. Use a `ValueFunc` for dynamic data:
+
+```go
+node := server.NewVariableNode(
+    ua.NewNumericNodeID(ns.ID(), 2001),
+    "MotorSpeed",
+    func() *ua.DataValue {
+        return server.DataValueFromValue(motor.RPM())
+    },
+)
+ns.AddNode(node)
+```
+
+### Folder Nodes
+
+Folder nodes organize the address space:
+
+```go
+folder := server.NewFolderNode(
+    ua.NewNumericNodeID(ns.ID(), 3001),
+    "BuildingA",
+)
+ns.AddNode(folder)
+
+// Attach it under the Objects folder
+ns.Objects().AddRef(folder, id.HasComponent, true)
+```
+
+### Dynamic Node Management
+
+Add and remove nodes at runtime via OPC-UA service calls:
+
+```go
+// Server-side: nodes can also be added/removed programmatically
+ns.AddNode(newNode)
+ns.DeleteNode(nodeID)
+
+// Client-side: clients can use AddNodes/DeleteNodes service calls
+// (if your access controller allows it)
+```
+
+---
+
+## Methods
+
+Register callable methods on the server:
+
+```go
+// Define the method handler
+handler := func(req *ua.CallMethodRequest) *ua.CallMethodResult {
+    // Extract input arguments
+    if len(req.InputArguments) < 1 {
+        return &ua.CallMethodResult{
+            StatusCode: ua.StatusBadArgumentsMissing,
+        }
+    }
+
+    factor, ok := req.InputArguments[0].Value().(float64)
+    if !ok {
+        return &ua.CallMethodResult{
+            StatusCode: ua.StatusBadTypeMismatch,
+        }
+    }
+
+    // Do work
+    result := factor * 2.0
+
+    return &ua.CallMethodResult{
+        StatusCode:      ua.StatusOK,
+        OutputArguments: []*ua.Variant{ua.MustVariant(result)},
+    }
+}
+
+// Register: objectID is the parent object, methodID is the method node
+objectID := ua.NewNumericNodeID(ns.ID(), 1001)
+methodID := ua.NewNumericNodeID(ns.ID(), 1002)
+s.RegisterMethod(objectID, methodID, handler)
+```
+
+Clients call the method via the standard `Call` service.
+
+---
+
+## NodeSet2 Import
+
+Import standard OPC-UA companion specifications or custom information models from NodeSet2 XML files:
+
+```go
+import (
+    "encoding/xml"
+    "os"
+
+    "github.com/otfabric/opcua/schema"
+)
+
+// Parse the XML
+data, _ := os.ReadFile("my-model.xml")
+var nodeset schema.UANodeSet
+xml.Unmarshal(data, &nodeset)
+
+// Import into the server
+if err := s.ImportNodeSet(&nodeset); err != nil {
+    log.Fatal(err)
+}
+```
+
+The importer handles:
+- Namespace URI registration
+- All node types (Objects, Variables, Methods, DataTypes, ObjectTypes, VariableTypes, ReferenceTypes)
+- Reference relationships
+- Node attributes (BrowseName, DisplayName, Description, DataType, etc.)
+- Aliases
+
+The standard OPC-UA NodeSet is imported automatically on server startup.
+
+---
+
+## Subscriptions and Monitored Items
+
+The server handles subscriptions automatically. When a client creates a subscription and adds monitored items, the server tracks changes and sends notifications.
+
+### Triggering Change Notifications
+
+When you change a node value, notify the server so it can push updates to subscribers:
+
+```go
+// Using MapNamespace — automatic with SetValue()
+data.SetValue("temperature", 25.0)  // Subscribers notified automatically
+
+// Using NodeNameSpace — call ChangeNotification after updating
+ns.SetAttribute(nodeID, ua.AttributeIDValue, newDataValue)
+ns.ChangeNotification(nodeID)
+
+// Or notify via the server directly
+s.ChangeNotification(nodeID)
+```
+
+### Events
+
+Emit events to subscribers monitoring a node for events:
+
+```go
+// Emit an event with field values
+fields := &ua.EventFieldList{
+    EventFields: []*ua.Variant{
+        ua.MustVariant("OverTemperature"),
+        ua.MustVariant(time.Now()),
+        ua.MustVariant("Temperature exceeded 100°C"),
+    },
+}
+s.EmitEvent(nodeID, fields)
+```
+
+### Subscription Lifecycle
+
+The server manages subscriptions with these services:
+- **CreateSubscription** — Client creates a subscription with publishing interval
+- **CreateMonitoredItems** — Client adds nodes to watch
+- **Publish** — Server sends notifications when values change
+- **ModifySubscription** — Client adjusts publishing parameters
+- **SetPublishingMode** — Client pauses/resumes a subscription
+- **DeleteSubscriptions** — Client removes subscriptions
+
+---
+
+## Access Control
+
+Implement fine-grained authorization by providing a custom `AccessController`:
+
+```go
+type MyAccessController struct {
+    readOnlyNodes map[string]bool
+}
+
+func (ac *MyAccessController) CheckRead(ctx context.Context, sess *server.Session, nodeID *ua.NodeID) ua.StatusCode {
+    return ua.StatusOK // Allow all reads
+}
+
+func (ac *MyAccessController) CheckWrite(ctx context.Context, sess *server.Session, nodeID *ua.NodeID) ua.StatusCode {
+    if ac.readOnlyNodes[nodeID.String()] {
+        return ua.StatusBadUserAccessDenied
+    }
+    return ua.StatusOK
+}
+
+func (ac *MyAccessController) CheckBrowse(ctx context.Context, sess *server.Session, nodeID *ua.NodeID) ua.StatusCode {
+    return ua.StatusOK
+}
+
+func (ac *MyAccessController) CheckCall(ctx context.Context, sess *server.Session, methodID *ua.NodeID) ua.StatusCode {
+    return ua.StatusOK
+}
+
+// Apply to server
+s := server.New(
+    server.WithAccessController(&MyAccessController{
+        readOnlyNodes: map[string]bool{"ns=1;i=1001": true},
+    }),
+    // ... other options
+)
+```
+
+The `DefaultAccessController` allows all operations.
+
+---
+
+## Complete Example
+
+A production-ready server with security, custom namespace, and methods:
+
+```go
+package main
+
+import (
+    "context"
+    "crypto/rsa"
+    "crypto/tls"
+    "log"
+    "log/slog"
+    "os"
+    "time"
+
+    "github.com/otfabric/opcua/server"
+    "github.com/otfabric/opcua/ua"
+)
+
+func main() {
+    // Load certificates
+    tlsCert, _ := tls.LoadX509KeyPair("cert.pem", "key.pem")
+    pk := tlsCert.PrivateKey.(*rsa.PrivateKey)
+    cert := tlsCert.Certificate[0]
+
+    // Configure server
+    s := server.New(
+        server.EndPoint("0.0.0.0", 4840),
+        server.Certificate(cert),
+        server.PrivateKey(pk),
+        server.EnableSecurity("Basic256Sha256", ua.MessageSecurityModeSignAndEncrypt),
+        server.EnableSecurity("None", ua.MessageSecurityModeNone),
+        server.EnableAuthMode(ua.UserTokenTypeAnonymous),
+        server.EnableAuthMode(ua.UserTokenTypeUserName),
+        server.ServerName("My OPC-UA Server"),
+        server.SetLogger(slog.New(slog.NewTextHandler(os.Stderr, nil))),
+    )
+
+    // Create application namespace
+    ns := server.NewNodeNameSpace(s, "http://example.com/myapp")
+
+    // Add a folder
+    folder := server.NewFolderNode(
+        ua.NewNumericNodeID(ns.ID(), 1000),
+        "Process",
+    )
+    ns.AddNode(folder)
+
+    // Add a variable
+    var temperature float64 = 22.0
+    tempNode := server.NewVariableNode(
+        ua.NewNumericNodeID(ns.ID(), 1001),
+        "Temperature",
+        func() *ua.DataValue {
+            return server.DataValueFromValue(temperature)
+        },
+    )
+    ns.AddNode(tempNode)
+
+    // Register a method
+    s.RegisterMethod(
+        ua.NewNumericNodeID(ns.ID(), 1000),  // object
+        ua.NewNumericNodeID(ns.ID(), 2001),  // method
+        func(req *ua.CallMethodRequest) *ua.CallMethodResult {
+            return &ua.CallMethodResult{StatusCode: ua.StatusOK}
+        },
+    )
+
+    // Start
+    if err := s.Start(context.Background()); err != nil {
+        log.Fatal(err)
+    }
+    defer s.Close()
+
+    // Simulate data changes
+    go func() {
+        for {
+            time.Sleep(time.Second)
+            temperature += 0.1
+            s.ChangeNotification(ua.NewNumericNodeID(ns.ID(), 1001))
+        }
+    }()
+
+    select {}
+}
+```

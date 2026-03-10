@@ -1,0 +1,1 @@
+this package is for testing the otfabric/opcua client against the otfabric/opcua server

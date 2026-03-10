@@ -1,0 +1,1 @@
+This test package is for testing the otfabric/opcua client against an external OPC server (python)
