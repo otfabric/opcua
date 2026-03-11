@@ -104,22 +104,15 @@ jobs:
 
           # Use RELEASE.md if it exists, otherwise generate from commits
           if [ -f RELEASE.md ]; then
-            {
-              echo "body<<RELEASE_EOF"
-              cat RELEASE.md
-              echo ""
-              echo "RELEASE_EOF"
-            } >> "$GITHUB_OUTPUT"
+            cp RELEASE.md "$RUNNER_TEMP/release-notes.md"
           else
             {
-              echo "body<<RELEASE_EOF"
               echo "## Changes since ${prev}"
               echo ""
               git log "${prev}..HEAD" --pretty=format:"- %s (%h)" 2>/dev/null || echo "- Initial release"
-              echo ""
-              echo "RELEASE_EOF"
-            } >> "$GITHUB_OUTPUT"
+            } > "$RUNNER_TEMP/release-notes.md"
           fi
+          echo "file=$RUNNER_TEMP/release-notes.md" >> "$GITHUB_OUTPUT"
 
       - name: Delete existing release
         if: steps.check.outputs.exists == 'true' && inputs.bump == 'none'
@@ -135,5 +128,5 @@ jobs:
           tag="${{ steps.version.outputs.tag }}"
           gh release create "$tag" \
             --title "$tag" \
-            --notes "${{ steps.notes.outputs.body }}" \
+            --notes-file "${{ steps.notes.outputs.file }}" \
             --target main
