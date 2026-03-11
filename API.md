@@ -517,7 +517,10 @@ All option functions return `Option` and are passed to `NewClient`:
 
 ```go
 func NewMonitoredItemCreateRequestWithDefaults(nodeID *ua.NodeID, attributeID ua.AttributeID, clientHandle uint32) *ua.MonitoredItemCreateRequest
+func ReferenceTypeDisplayName(refTypeID *ua.NodeID) string
 ```
+
+`ReferenceTypeDisplayName` returns a display string for a reference type NodeID: the standard name (e.g. "HasComponent", "Organizes") for well-known types in namespace 0, otherwise the NodeID string. Use when displaying the reference type column in browse refs.
 
 ---
 
@@ -1601,3 +1604,9 @@ Contains ~10,000 constants organised by node class:
 
 These constants are used as arguments to browse and read operations to refer
 to well-known nodes in the address space.
+
+```go
+func ReferenceTypeName(id uint32) string
+```
+
+`ReferenceTypeName` returns the standard OPC UA name for a well-known reference type in namespace 0 (e.g. 47 → "HasComponent", 35 → "Organizes"), or "" if unknown. Use when displaying reference type NodeIDs (e.g. browse refs) to show names instead of raw NodeIDs. For a single call that accepts a NodeID and returns either the name or the NodeID string, use [ReferenceTypeDisplayName](opcua package) in the root package.

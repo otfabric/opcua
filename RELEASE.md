@@ -1,3 +1,29 @@
+# Release v0.1.9
+
+**Date:** 2026-03-11
+**Previous release:** v0.1.8
+
+## Summary
+
+Adds an API to resolve well-known reference type NodeIDs to their standard
+names (e.g. "HasComponent", "Organizes") so tools like `opcuactl browse refs` can
+show names instead of raw NodeIDs (i=47, i=46) in the reference type column.
+
+## Reference type display names
+
+- **`id.ReferenceTypeName(id uint32) string`** — Returns the standard OPC UA
+  name for a well-known reference type in namespace 0 (e.g. 47 → "HasComponent",
+  35 → "Organizes"), or "" if unknown.
+- **`ReferenceTypeDisplayName(refTypeID *ua.NodeID) string`** — Convenience
+  helper in the root package: returns the standard name when the NodeID is in
+  namespace 0 and known, otherwise returns the NodeID string. Use when
+  displaying the reference type column in browse refs or similar UIs.
+
+Clients can call `ReferenceTypeDisplayName(ref.ReferenceTypeID)` when rendering
+`ReferenceDescription` rows to show "HasComponent" instead of "i=47".
+
+---
+
 # Release v0.1.8
 
 **Date:** 2026-03-11

@@ -102,9 +102,10 @@ jobs:
           tag="${{ steps.version.outputs.tag }}"
           prev="${{ steps.version.outputs.latest }}"
 
-          # Use RELEASE.md if it exists, otherwise generate from commits
+          # Use RELEASE.md if it exists: take only the first release block (up to first "---")
+          # so the GitHub release shows notes for this version only, not the full history.
           if [ -f RELEASE.md ]; then
-            cp RELEASE.md "$RUNNER_TEMP/release-notes.md"
+            awk '/^---$/ { exit } { print }' RELEASE.md > "$RUNNER_TEMP/release-notes.md"
           else
             {
               echo "## Changes since ${prev}"

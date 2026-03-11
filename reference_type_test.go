@@ -1,0 +1,32 @@
+// Copyright 2018-2024 opcua authors. All rights reserved.
+// Use of this source code is governed by a MIT-style license that can be
+// found in the LICENSE file.
+
+package opcua
+
+import (
+	"testing"
+
+	"github.com/otfabric/opcua/ua"
+	"github.com/stretchr/testify/require"
+)
+
+func TestReferenceTypeDisplayName(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		require.Equal(t, "", ReferenceTypeDisplayName(nil))
+	})
+	t.Run("well-known ns=0", func(t *testing.T) {
+		nid := ua.NewNumericNodeID(0, 47) // HasComponent
+		require.Equal(t, "HasComponent", ReferenceTypeDisplayName(nid))
+		nid = ua.NewNumericNodeID(0, 35) // Organizes
+		require.Equal(t, "Organizes", ReferenceTypeDisplayName(nid))
+	})
+	t.Run("unknown ns=0 falls back to NodeID string", func(t *testing.T) {
+		nid := ua.NewNumericNodeID(0, 99999)
+		require.Equal(t, nid.String(), ReferenceTypeDisplayName(nid))
+	})
+	t.Run("non-zero namespace falls back to NodeID string", func(t *testing.T) {
+		nid := ua.NewNumericNodeID(1, 47)
+		require.Equal(t, nid.String(), ReferenceTypeDisplayName(nid))
+	})
+}
