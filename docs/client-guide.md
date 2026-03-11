@@ -273,6 +273,75 @@ resp, err := c.Browse(ctx, req)
 
 ---
 
+## Resolving paths to nodes (browse path translation)
+
+The **TranslateBrowsePathsToNodeIDs** service resolves a path of browse names to a NodeID. This is essential when you have a logical path (e.g. `"Server.ServerStatus"` or `"Objects.MyDevice.Temperature"`) and need a `Node` to read, write, or subscribe.
+
+### High-level: resolve from Objects folder
+
+**NodeFromPath** resolves a dot-separated path from the server's Objects folder (namespace 0):
+
+```go
+node, err := c.NodeFromPath(ctx, "Server.ServerStatus")
+if err != nil {
+    log.Fatal(err)
+}
+v, err := node.Value(ctx)
+```
+
+**NodeFromPathInNamespace** does the same but interprets all path segments in a given namespace index (e.g. for custom namespaces):
+
+```go
+node, err := c.NodeFromPathInNamespace(ctx, 1, "MyFolder.Sensor1.Temperature")
+if err != nil {
+    log.Fatal(err)
+}
+dv, err := c.ReadValue(ctx, node.ID)
+```
+
+### From a custom starting node
+
+When the path does not start from the server's Objects folder, use a **Node** and **TranslateBrowsePathInNamespaceToNodeID**:
+
+```go
+root := c.Node(ua.NewNumericNodeID(0, id.ObjectsFolder))
+nodeID, err := root.TranslateBrowsePathInNamespaceToNodeID(ctx, 0, "Server.ServerStatus")
+if err != nil {
+    log.Fatal(err)
+}
+node := c.Node(nodeID)
+```
+
+For multiple path segments in a specific namespace:
+
+```go
+root := c.Node(ua.NewStringNodeID(1, "MyDevice"))
+nodeID, err := root.TranslateBrowsePathInNamespaceToNodeID(ctx, 1, "Sensors.Temperature")
+if err != nil {
+    log.Fatal(err)
+}
+node := c.Node(nodeID)
+```
+
+### Low-level: multiple paths in one request
+
+For full control (e.g. multiple paths or custom reference types), use **TranslateBrowsePathsToNodeIDs** on a Node with a slice of [ua.QualifiedName](https://pkg.go.dev/github.com/otfabric/opcua/ua#QualifiedName) segments:
+
+```go
+root := c.Node(ua.NewNumericNodeID(0, id.ObjectsFolder))
+names := []*ua.QualifiedName{
+    {NamespaceIndex: 0, Name: "Server"},
+    {NamespaceIndex: 0, Name: "ServerStatus"},
+}
+nodeID, err := root.TranslateBrowsePathsToNodeIDs(ctx, names)
+if err != nil {
+    log.Fatal(err)
+}
+node := c.Node(nodeID)
+```
+
+---
+
 ## Subscriptions
 
 ### Using the Builder (Recommended)

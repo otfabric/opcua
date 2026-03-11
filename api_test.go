@@ -295,3 +295,32 @@ func TestClientNamespaceURI(t *testing.T) {
 	_, err = c.NamespaceURI(ctx, 65535)
 	require.Error(t, err)
 }
+
+func TestNodeFromPath(t *testing.T) {
+	_, url := testutil.NewTestServer(t)
+	c := testutil.NewTestClient(t, url)
+	ctx := context.Background()
+
+	// Standard path from Objects folder (namespace 0): "Server" is a well-known child
+	node, err := c.NodeFromPath(ctx, "Server")
+	require.NoError(t, err)
+	require.NotNil(t, node)
+	require.NotNil(t, node.ID)
+}
+
+func TestNodeFromPathInNamespace(t *testing.T) {
+	srv, url := testutil.NewTestServer(t)
+	ns := testutil.AddTestNodes(t, srv)
+	require.NotNil(t, ns)
+	c := testutil.NewTestClient(t, url)
+	ctx := context.Background()
+
+	// Path from Objects folder: TestNodes (custom namespace Objects node) then IntVar.
+	// Browse names from the test server use namespace 0.
+	node, err := c.NodeFromPathInNamespace(ctx, 0, "TestNodes.IntVar")
+	require.NoError(t, err)
+	require.NotNil(t, node)
+	v, err := node.Value(ctx)
+	require.NoError(t, err)
+	require.Equal(t, int32(42), v.Value())
+}

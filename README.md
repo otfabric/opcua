@@ -148,6 +148,7 @@ func main() {
 | **Reading** | Single/batch reads, all attributes, `Node.Value()`, `Node.Summary()` |
 | **Writing** | Single/batch writes, any attribute, `WriteValue`, `WriteAttribute` |
 | **Browsing** | Forward/inverse/both, continuation points, `BrowseAll`, `Walk` iterator |
+| **Path resolution** | `NodeFromPath`, `NodeFromPathInNamespace`, `Node.TranslateBrowsePathInNamespaceToNodeID` (TranslateBrowsePathsToNodeIDs) |
 | **Subscriptions** | Data-change, events, modify/cancel, `SetTriggering`, `SetPublishingMode`, builder API |
 | **Methods** | `Call`, `CallMethod` (auto-wrap args), `MethodArguments` introspection |
 | **History** | Read: raw/modified, events, processed, at-time. Update: data, events. Delete: raw/modified, at-time, events |

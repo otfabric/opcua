@@ -88,6 +88,17 @@ func (c *Client) BrowseNext(ctx context.Context, req *ua.BrowseNextRequest) (*ua
 func (c *Client) BrowseAll(ctx context.Context, nodeID *ua.NodeID) ([]*ua.ReferenceDescription, error)
 ```
 
+#### Browse path translation (path to NodeID)
+
+Resolve a dot-separated browse path to a Node, starting from the server's Objects folder:
+
+```go
+func (c *Client) NodeFromPath(ctx context.Context, path string) (*Node, error)
+func (c *Client) NodeFromPathInNamespace(ctx context.Context, ns uint16, path string) (*Node, error)
+```
+
+`NodeFromPath` uses namespace 0 for all path segments. `NodeFromPathInNamespace` uses the given namespace index for all segments. See [Resolving paths to nodes](docs/client-guide.md#resolving-paths-to-nodes-browse-path-translation) in the client guide.
+
 #### History
 
 ```go
@@ -151,6 +162,8 @@ func (c *Client) DeleteReferences(ctx context.Context, req *ua.DeleteReferencesR
 ```go
 func (c *Client) Node(id *ua.NodeID) *Node
 func (c *Client) NodeFromExpandedNodeID(id *ua.ExpandedNodeID) *Node
+func (c *Client) NodeFromPath(ctx context.Context, path string) (*Node, error)
+func (c *Client) NodeFromPathInNamespace(ctx context.Context, ns uint16, path string) (*Node, error)
 ```
 
 #### Discovery
@@ -238,6 +251,17 @@ func (n *Node) References(ctx context.Context, refs uint32, dir ua.BrowseDirecti
 func (n *Node) Browse(ctx context.Context, refs uint32, dir ua.BrowseDirection, mask ua.NodeClass, includeSubtypes bool) ([]*ua.ReferenceDescription, error)
 func (n *Node) BrowseAll(ctx context.Context, refs uint32, dir ua.BrowseDirection, mask ua.NodeClass, includeSubtypes bool) iter.Seq2[*ua.ReferenceDescription, error]
 ```
+
+#### Browse path translation
+
+Resolve a path of browse names to a NodeID (TranslateBrowsePathsToNodeIDs service):
+
+```go
+func (n *Node) TranslateBrowsePathsToNodeIDs(ctx context.Context, pathNames []*ua.QualifiedName) (*ua.NodeID, error)
+func (n *Node) TranslateBrowsePathInNamespaceToNodeID(ctx context.Context, ns uint16, browsePath string) (*ua.NodeID, error)
+```
+
+`TranslateBrowsePathInNamespaceToNodeID` splits `browsePath` on `.` and builds a path of [QualifiedName](https://pkg.go.dev/github.com/otfabric/opcua/ua#QualifiedName) segments in the given namespace. Use these when the path starts from this node (e.g. a custom root). For paths from the server's Objects folder, use `Client.NodeFromPath` or `Client.NodeFromPathInNamespace` instead.
 
 #### Walk
 

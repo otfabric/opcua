@@ -1125,6 +1125,35 @@ func (c *Client) NodeFromExpandedNodeID(id *ua.ExpandedNodeID) *Node {
 	return &Node{ID: ua.NewNodeIDFromExpandedNodeID(id), c: c}
 }
 
+// NodeFromPath resolves a dot-separated browse path from the server's Objects folder
+// (namespace 0) and returns a Node for the target. Path segments are interpreted in
+// namespace 0. For paths in another namespace, use NodeFromPathInNamespace or
+// Node().TranslateBrowsePathInNamespaceToNodeID.
+//
+// Example: NodeFromPath(ctx, "Server.ServerStatus") returns the ServerStatus node.
+func (c *Client) NodeFromPath(ctx context.Context, path string) (*Node, error) {
+	root := c.Node(ua.NewNumericNodeID(0, id.ObjectsFolder))
+	nodeID, err := root.TranslateBrowsePathInNamespaceToNodeID(ctx, 0, path)
+	if err != nil {
+		return nil, err
+	}
+	return c.Node(nodeID), nil
+}
+
+// NodeFromPathInNamespace is like NodeFromPath but interprets all path segments in
+// the given namespace index. The path is still resolved starting from the server's
+// Objects folder.
+//
+// Example: NodeFromPathInNamespace(ctx, 1, "Objects.IntVar") for a custom namespace 1.
+func (c *Client) NodeFromPathInNamespace(ctx context.Context, ns uint16, path string) (*Node, error) {
+	root := c.Node(ua.NewNumericNodeID(0, id.ObjectsFolder))
+	nodeID, err := root.TranslateBrowsePathInNamespaceToNodeID(ctx, ns, path)
+	if err != nil {
+		return nil, err
+	}
+	return c.Node(nodeID), nil
+}
+
 // FindServers finds the servers available at an endpoint
 func (c *Client) FindServers(ctx context.Context) (*ua.FindServersResponse, error) {
 	stats.Client().Add("FindServers", 1)
