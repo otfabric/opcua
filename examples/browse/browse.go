@@ -45,13 +45,6 @@ func (n NodeDef) Records() []string {
 	return []string{n.BrowseName, n.DataType, n.NodeID.String(), n.Unit, n.Scale, n.Min, n.Max, strconv.FormatBool(n.Writable), n.Description}
 }
 
-func join(a, b string) string {
-	if a == "" {
-		return b
-	}
-	return a + "." + b
-}
-
 // nodeDefFromAttrs fetches attributes for the node and builds a NodeDef. Returns (nil, nil) to skip (e.g. access denied).
 func nodeDefFromAttrs(ctx context.Context, node *opcua.Node, path string) (*NodeDef, error) {
 	attrs, err := node.Attributes(ctx, ua.AttributeIDNodeClass, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType)
