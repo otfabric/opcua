@@ -288,8 +288,9 @@ func (n *NodeID) SetStringID(v string) error {
 	}
 }
 
-// String returns the string representation of the NodeID
-// in the format described by ParseNodeID.
+// String returns the canonical string representation of the NodeID:
+// i=<id>, s=<id>, g=<id>, or b=<id> for namespace 0; ns=<n>;i=<id> (or s/g/b) for ns != 0.
+// Namespace 0 is omitted so that round-trip with ParseNodeID is consistent (e.g. "i=85" not "ns=0;i=85").
 func (n *NodeID) String() string {
 	if n == nil {
 		return ""

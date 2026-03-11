@@ -66,7 +66,7 @@ func main() {
     }
     defer c.Close(ctx)
 
-    v, err := c.Node(ua.MustParseNodeID("ns=0;i=2258")).Value(ctx)
+    v, err := c.Node(ua.MustParseNodeID("i=2258")).Value(ctx) // or opcua.StandardNodeID("CurrentTime") for symbolic name
     if err != nil {
         log.Fatal(err)
     }
@@ -154,7 +154,7 @@ func main() {
 | **Reading** | Single/batch reads, all attributes, `Node.Value()`, `Node.Summary()` |
 | **Writing** | Single/batch writes, any attribute, `WriteValue`, `WriteAttribute` |
 | **Browsing** | Forward/inverse/both, continuation points, `BrowseAll`, `Walk` / `WalkLimit` (depth-limited), `WalkLimitDedup` (no duplicate nodes) |
-| **Path resolution** | `NodeFromPath`, `NodeFromPathInNamespace`, `Node.TranslateBrowsePathInNamespaceToNodeID` (TranslateBrowsePathsToNodeIDs) |
+| **Path resolution** | `NodeFromPath`, `NodeFromPathInNamespace`, `NodeFromQualifiedPath` (ns:name), `Node.TranslateBrowsePathInNamespaceToNodeID` (TranslateBrowsePathsToNodeIDs). Symbolic node names: `StandardNodeID("CurrentTime")`, `id.NodeIDByName(name)` |
 | **Subscriptions** | Data-change, events, modify/cancel, `SetTriggering`, `SetPublishingMode`, builder API |
 | **Methods** | `Call`, `CallMethod` (auto-wrap args), `MethodArguments` introspection |
 | **History** | Read: raw/modified, events, processed, at-time. Update: data, events. Delete: raw/modified, at-time, events |

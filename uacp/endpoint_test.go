@@ -74,3 +74,20 @@ func TestResolveEndpoint(t *testing.T) {
 		}
 	}
 }
+
+func TestDialTCP(t *testing.T) {
+	t.Run("invalid endpoint returns error", func(t *testing.T) {
+		conn, err := DialTCP(context.Background(), "tcp://127.0.0.1:4840")
+		require.Error(t, err)
+		require.Nil(t, conn)
+	})
+	t.Run("valid format dial attempts connection", func(t *testing.T) {
+		// Port likely closed; either connection refused or (rarely) something listening
+		conn, err := DialTCP(context.Background(), "opc.tcp://127.0.0.1:59999")
+		if err != nil {
+			require.Nil(t, conn)
+			return
+		}
+		conn.Close()
+	})
+}

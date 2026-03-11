@@ -100,6 +100,11 @@ func (m *Variant) Has(mask byte) bool {
 	return m.mask&mask == mask
 }
 
+// IsArray returns true if the variant value is an array (one- or multi-dimensional).
+func (m *Variant) IsArray() bool {
+	return m != nil && m.Has(VariantArrayValues)
+}
+
 // ArrayLength returns the total number of elements for one and multi-dimensional
 // array values.
 func (m *Variant) ArrayLength() int32 {

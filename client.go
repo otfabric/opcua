@@ -12,6 +12,8 @@ import (
 	"io"
 	"iter"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -1145,10 +1147,14 @@ func (c *Client) NodeFromExpandedNodeID(id *ua.ExpandedNodeID) *Node {
 	return &Node{ID: ua.NewNodeIDFromExpandedNodeID(id), c: c}
 }
 
-// NodeFromPath resolves a dot-separated browse path from the server's Objects folder
-// (namespace 0) and returns a Node for the target. Path segments are interpreted in
-// namespace 0. For paths in another namespace, use NodeFromPathInNamespace or
-// Node().TranslateBrowsePathInNamespaceToNodeID.
+// NodeFromPath resolves a dot-separated browse path to a Node.
+//
+// Start node: server's Objects folder (i=85).
+// Namespace: all path segments are interpreted in namespace 0.
+// Path format: dot-separated browse names (e.g. "Server.ServerStatus").
+// Error behavior: returns (nil, err) if the path does not resolve, the TranslateBrowsePathsToNodeIDs
+// service fails, or the client is not connected. Use NodeFromPathInNamespace for a different namespace;
+// use Node().TranslateBrowsePathInNamespaceToNodeID when starting from a custom node.
 //
 // Example: NodeFromPath(ctx, "Server.ServerStatus") returns the ServerStatus node.
 func (c *Client) NodeFromPath(ctx context.Context, path string) (*Node, error) {
@@ -1160,9 +1166,14 @@ func (c *Client) NodeFromPath(ctx context.Context, path string) (*Node, error) {
 	return c.Node(nodeID), nil
 }
 
-// NodeFromPathInNamespace is like NodeFromPath but interprets all path segments in
-// the given namespace index. The path is still resolved starting from the server's
-// Objects folder.
+// NodeFromPathInNamespace resolves a dot-separated browse path to a Node using a single namespace for all segments.
+//
+// Start node: server's Objects folder (i=85).
+// Namespace: all path segments use the given namespace index ns.
+// Path format: dot-separated browse names (e.g. "MyFolder.Sensor1.Temperature").
+// Error behavior: returns (nil, err) if the path does not resolve, the service fails, or the client is not connected.
+// For paths in namespace 0 from Objects folder, NodeFromPath is equivalent. For a custom start node, use
+// Node().TranslateBrowsePathInNamespaceToNodeID.
 //
 // Example: NodeFromPathInNamespace(ctx, 1, "Objects.IntVar") for a custom namespace 1.
 func (c *Client) NodeFromPathInNamespace(ctx context.Context, ns uint16, path string) (*Node, error) {
@@ -1172,6 +1183,60 @@ func (c *Client) NodeFromPathInNamespace(ctx context.Context, ns uint16, path st
 		return nil, err
 	}
 	return c.Node(nodeID), nil
+}
+
+// NodeFromQualifiedPath resolves a namespace-qualified path to a Node.
+//
+// Path format: dot-separated segments, each of the form "ns:name" where ns is a decimal
+// namespace index (0-65535) and name is the browse name (e.g. "0:Server.0:ServerStatus" or
+// "2:DeviceSet.4:PLC_Name"). Parsing is protocol-level and uses TranslateBrowsePathsToNodeIDs
+// with per-segment namespace indices.
+//
+// Start node: server's Objects folder (i=85).
+// Namespace: each segment specifies its own namespace via the "ns:" prefix.
+// Error behavior: returns (nil, err) if the path is invalid (e.g. segment missing "ns:" or ns not numeric),
+// the path does not resolve, the service fails, or the client is not connected.
+func (c *Client) NodeFromQualifiedPath(ctx context.Context, path string) (*Node, error) {
+	pathNames, err := parseQualifiedPath(path)
+	if err != nil {
+		return nil, err
+	}
+	if len(pathNames) == 0 {
+		return nil, fmt.Errorf("opcua: qualified path has no segments: %q", path)
+	}
+	root := c.Node(ua.NewNumericNodeID(0, id.ObjectsFolder))
+	nodeID, err := root.TranslateBrowsePathsToNodeIDs(ctx, pathNames)
+	if err != nil {
+		return nil, err
+	}
+	return c.Node(nodeID), nil
+}
+
+// parseQualifiedPath parses "ns1:name1.ns2:name2" into a slice of QualifiedName.
+// Each segment must contain at least one ":"; the part before the first ":" is the namespace index (decimal).
+func parseQualifiedPath(path string) ([]*ua.QualifiedName, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil, fmt.Errorf("opcua: qualified path is empty")
+	}
+	var out []*ua.QualifiedName
+	for i, seg := range strings.Split(path, ".") {
+		seg = strings.TrimSpace(seg)
+		colon := strings.Index(seg, ":")
+		if colon < 0 {
+			return nil, fmt.Errorf("opcua: qualified path segment %d %q missing namespace prefix (expected ns:name)", i+1, seg)
+		}
+		nsStr, name := seg[:colon], strings.TrimSpace(seg[colon+1:])
+		if name == "" {
+			return nil, fmt.Errorf("opcua: qualified path segment %d has empty name after namespace", i+1)
+		}
+		ns64, err := strconv.ParseUint(strings.TrimSpace(nsStr), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("opcua: qualified path segment %d namespace %q: %w", i+1, nsStr, err)
+		}
+		out = append(out, &ua.QualifiedName{NamespaceIndex: uint16(ns64), Name: name})
+	}
+	return out, nil
 }
 
 // FindServers finds the servers available at an endpoint

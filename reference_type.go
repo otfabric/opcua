@@ -25,3 +25,33 @@ func ReferenceTypeDisplayName(refTypeID *ua.NodeID) string {
 	}
 	return refTypeID.String()
 }
+
+// DataTypeDisplayName returns a display string for a DataType NodeID.
+// For well-known DataTypes in namespace 0 (e.g. Float, String, Boolean, UtcTime),
+// it returns the standard name; otherwise it returns the NodeID string.
+// Use when displaying DataType attributes or type columns to normalize type
+// rendering (e.g. "Float" instead of "i=10", "UtcTime" instead of "i=294").
+// Returns the empty string if dataTypeID is nil.
+func DataTypeDisplayName(dataTypeID *ua.NodeID) string {
+	if dataTypeID == nil {
+		return ""
+	}
+	if dataTypeID.Namespace() == 0 {
+		if name := id.DataTypeName(dataTypeID.IntID()); name != "" {
+			return name
+		}
+	}
+	return dataTypeID.String()
+}
+
+// StandardNodeID returns the namespace-0 NodeID for a well-known standard node name, if known.
+// Uses id.NodeIDByName and returns ua.NewNumericNodeID(0, id). Names include "Server", "ObjectsFolder",
+// "Server_ServerStatus_CurrentTime", and short aliases "CurrentTime" (→ i=2258), "ServerStatus" (→ i=2256),
+// "Objects" (→ i=85). Use for CLI flags like get value -n CurrentTime instead of -n i=2258.
+func StandardNodeID(name string) (*ua.NodeID, bool) {
+	id, ok := id.NodeIDByName(name)
+	if !ok {
+		return nil, false
+	}
+	return ua.NewNumericNodeID(0, id), true
+}

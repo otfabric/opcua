@@ -501,15 +501,25 @@ func TestMustVariant(t *testing.T) {
 func TestArray(t *testing.T) {
 	t.Run("one-dimension", func(t *testing.T) {
 		v := MustVariant([]uint32{1, 2, 3})
+		require.True(t, v.IsArray())
 		require.Equal(t, int32(3), v.ArrayLength(), "ArrayLength not equal")
 		require.Equal(t, byte(TypeIDUint32|VariantArrayValues), v.EncodingMask(), "EncodingMask not equal")
 		require.Equal(t, []int32(nil), v.ArrayDimensions())
 	})
 	t.Run("multi-dimension", func(t *testing.T) {
 		v := MustVariant([][]uint32{{1, 1}, {2, 2}, {3, 3}})
+		require.True(t, v.IsArray())
 		require.Equal(t, int32(6), v.ArrayLength(), "ArrayLength not equal")
 		require.Equal(t, byte(TypeIDUint32|VariantArrayValues|VariantArrayDimensions), v.EncodingMask(), "EncodingMask not equal")
 		require.Equal(t, []int32{3, 2}, v.ArrayDimensions())
+	})
+	t.Run("scalar IsArray false", func(t *testing.T) {
+		v := MustVariant(int32(42))
+		require.False(t, v.IsArray())
+	})
+	t.Run("nil receiver IsArray false", func(t *testing.T) {
+		var v *Variant
+		require.False(t, v.IsArray())
 	})
 	t.Run("unbalanced", func(t *testing.T) {
 		b := []byte{

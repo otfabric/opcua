@@ -1,3 +1,59 @@
+# Release v0.1.10
+
+**Date:** 2026-03-11
+**Previous release:** v0.1.9
+
+## Summary
+
+Adds type and status display helpers, namespace-qualified path resolution,
+symbolic node name lookup, TCP-only dial for diagnostics, and documentation
+improvements for path semantics and CSV/JSON consistency.
+
+## DataType display names
+
+- **`id.DataTypeName(id uint32) string`** — Returns the standard OPC UA name for well-known DataTypes in namespace 0 (e.g. 10 → "Float", 12 → "String", 294 → "UtcTime"), or "" if unknown.
+- **`DataTypeDisplayName(dataTypeID *ua.NodeID) string`** — Convenience in the root package: standard name for known ns=0 DataTypes, otherwise the NodeID string. Use to normalize type rendering (e.g. "Float" instead of "i=10").
+
+## Status code helpers
+
+- **`StatusCode.Symbol() string`** — Short symbolic name only (e.g. "Good", "BadServiceUnsupported"), stripping the "Status" prefix. Use for compact status rendering instead of `Error()`.
+- **`StatusCode.Uint32() uint32`** — Raw 32-bit value for consistent CSV/JSON serialization.
+
+## Variant array
+
+- **`Variant.IsArray() bool`** — Returns true if the variant value is an array (one- or multi-dimensional). `ArrayDimensions()` was already present (returns `[]int32`).
+
+## Connection diagnostics
+
+- **`uacp.DialTCP(ctx, endpoint) (net.Conn, error)`** — TCP-only connect to the endpoint host:port; no OPC UA HEL/ACK or secure channel. Caller must close the returned connection. Use for TCP reachability checks (e.g. ping) without creating a session.
+
+## Path resolution
+
+- **Path semantics docs** — Godoc and API.md/client-guide now state start node, namespace handling, and error behavior for `NodeFromPath`, `NodeFromPathInNamespace`, `Node.TranslateBrowsePathInNamespaceToNodeID`, and `Node.TranslateBrowsePathsToNodeIDs`.
+- **`Client.NodeFromQualifiedPath(ctx, path) (*Node, error)`** — Parses namespace-qualified path syntax `ns:segment.ns:segment` (e.g. `0:Server.0:ServerStatus`, `2:DeviceSet.4:PLC_Name`) and calls TranslateBrowsePathsToNodeIDs with per-segment namespace indices. Start node is Objects folder.
+
+## Symbolic node names
+
+- **`id.NodeIDByName(name string) (uint32, bool)`** — Reverse lookup from well-known standard node names (namespace 0) to numeric ID. Names include full spec names ("Server", "ObjectsFolder", "Server_ServerStatus_CurrentTime") and short aliases: "CurrentTime" → 2258, "ServerStatus" → 2256, "Objects" → 85.
+- **`StandardNodeID(name string) (*ua.NodeID, bool)`** — Root package helper: returns `ua.NewNumericNodeID(0, id)` when `id.NodeIDByName(name)` succeeds. Use for CLI or config that accepts symbolic names (e.g. `get value -n CurrentTime` instead of `-n i=2258`).
+
+## CSV/JSON and canonical form
+
+- **`ua.NodeID.String()`** — Godoc and API.md now state that output is canonical (namespace 0 omitted; round-trip with `ParseNodeID`).
+- **`StatusCode.Uint32()`** — See above; supports consistent numeric serialization.
+
+## Endpoint troubleshooting
+
+- **Verification** — `EndpointDescription` fields `TransportProfileURI`, `ServerCertificate`, and `Server.ApplicationURI` are already exposed and used; no code change; documented for endpoint output tooling.
+
+## Documentation
+
+- README.md path resolution row updated with `NodeFromQualifiedPath` and symbolic names (`StandardNodeID`, `id.NodeIDByName`). Quickstart comment added for `StandardNodeID("CurrentTime")`.
+- docs/client-guide.md: connection diagnostics (ping) section, path semantics table with `NodeFromQualifiedPath`, and symbolic node names (`StandardNodeID`) subsection.
+- API.md: all new functions and tables (path semantics, DataType/StatusCode/Variant, uacp.DialTCP, id.NodeIDByName, StandardNodeID, NodeID canonical, StatusCode.Uint32).
+
+---
+
 # Release v0.1.9
 
 **Date:** 2026-03-11

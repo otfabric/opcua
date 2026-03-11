@@ -471,7 +471,13 @@ func (n *Node) BrowseAll(ctx context.Context, refType uint32, dir ua.BrowseDirec
 	}
 }
 
-// TranslateBrowsePathsToNodeIDs translates an array of browseName segments to NodeIDs.
+// TranslateBrowsePathsToNodeIDs resolves a path of browse name segments to a single NodeID using the TranslateBrowsePathsToNodeIDs service.
+//
+// Start node: the receiver node n (StartingNode in the request).
+// Namespace: each segment can specify its own namespace via pathNames[i].NamespaceIndex.
+// Path format: slice of QualifiedName; traversal uses HierarchicalReferences.
+// Error behavior: returns (nil, err) if the path does not resolve (no targets or non-OK status), the service fails, or the client is not connected. err may be a ua.StatusCode (e.g. StatusBadNotFound).
+// For a dot-separated path string with one namespace for all segments, use TranslateBrowsePathInNamespaceToNodeID.
 func (n *Node) TranslateBrowsePathsToNodeIDs(ctx context.Context, pathNames []*ua.QualifiedName) (*ua.NodeID, error) {
 	req := ua.TranslateBrowsePathsToNodeIDsRequest{
 		BrowsePaths: []*ua.BrowsePath{
@@ -515,7 +521,13 @@ func (n *Node) TranslateBrowsePathsToNodeIDs(ctx context.Context, pathNames []*u
 	return nodeID, err
 }
 
-// TranslateBrowsePathInNamespaceToNodeID translates a browseName to a NodeID within the same namespace.
+// TranslateBrowsePathInNamespaceToNodeID resolves a dot-separated browse path to a NodeID, with all segments in one namespace.
+//
+// Start node: the receiver node n.
+// Namespace: every path segment uses the given namespace index ns.
+// Path format: dot-separated browse names (e.g. "Server.ServerStatus" or "Sensors.Temperature"); split on "." and each segment becomes a QualifiedName{NamespaceIndex: ns, Name: segment}.
+// Error behavior: returns (nil, err) if the path does not resolve, the TranslateBrowsePathsToNodeIDs service fails, or the client is not connected. err may be a ua.StatusCode.
+// For paths from the server's Objects folder, Client.NodeFromPath or Client.NodeFromPathInNamespace are simpler. For per-segment namespaces, use TranslateBrowsePathsToNodeIDs with a []*ua.QualifiedName.
 func (n *Node) TranslateBrowsePathInNamespaceToNodeID(ctx context.Context, ns uint16, browsePath string) (*ua.NodeID, error) {
 	segments := strings.Split(browsePath, ".")
 	var names []*ua.QualifiedName

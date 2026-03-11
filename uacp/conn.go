@@ -115,6 +115,21 @@ func Dial(ctx context.Context, endpoint string) (*Conn, error) {
 	return d.Dial(ctx, endpoint)
 }
 
+// DialTCP establishes a TCP connection to the OPC UA endpoint address only.
+// It parses the endpoint URL (e.g. opc.tcp://host:4840/path), resolves the host,
+// and opens a TCP connection. No OPC UA HEL/ACK or secure channel is performed.
+// The caller must close the returned connection.
+// Use this for TCP reachability checks (e.g. "ping" or connection diagnostics)
+// without creating a session or secure channel.
+func DialTCP(ctx context.Context, endpoint string) (net.Conn, error) {
+	_, raddr, err := ResolveEndpoint(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+	var d net.Dialer
+	return d.DialContext(ctx, "tcp", raddr.Host)
+}
+
 // Listener is a OPC UA Connection Protocol network listener.
 type Listener struct {
 	l        *net.TCPListener

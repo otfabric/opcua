@@ -75,6 +75,16 @@ c, _ := opcua.NewClient(ep.EndpointURL,
 )
 ```
 
+### Connection diagnostics (ping)
+
+To test connectivity at different layers:
+
+- **TCP only** — Use `uacp.DialTCP(ctx, endpoint)` to open a raw TCP connection; close the returned `net.Conn` when done. Use this to verify TCP reachability without OPC UA handshakes.
+- **SecureChannel** — Call `Client.Dial(ctx)` (no session).
+- **Session + Auth + Browse** — Call `Client.Connect(ctx)` then e.g. `Client.BrowseAll(ctx, ua.ObjectIDRootFolder)` to verify full stack (session, auth, browse root).
+
+A "ping" or connection-test command can run these steps in order and report which layer failed.
+
 ---
 
 ## Client Options
@@ -279,6 +289,16 @@ resp, err := c.Browse(ctx, req)
 
 The **TranslateBrowsePathsToNodeIDs** service resolves a path of browse names to a NodeID. This is essential when you have a logical path (e.g. `"Server.ServerStatus"` or `"Objects.MyDevice.Temperature"`) and need a `Node` to read, write, or subscribe.
 
+**Path semantics summary:**
+
+| API | Start node | Namespace | Error |
+|-----|------------|-----------|--------|
+| `NodeFromPath(ctx, path)` | Objects folder (i=85) | All segments ns=0 | (nil, err) if path not found or service fails |
+| `NodeFromPathInNamespace(ctx, ns, path)` | Objects folder (i=85) | All segments use ns | Same |
+| `NodeFromQualifiedPath(ctx, path)` | Objects folder (i=85) | Per-segment `ns:name` (e.g. `0:Server.0:ServerStatus`) | (nil, err) if path invalid, not found, or service fails |
+| `node.TranslateBrowsePathInNamespaceToNodeID(ctx, ns, path)` | Receiver node | All segments use ns | (nil, err); err may be ua.StatusCode |
+| `node.TranslateBrowsePathsToNodeIDs(ctx, pathNames)` | Receiver node | Per-segment (QualifiedName.NamespaceIndex) | Same |
+
 ### High-level: resolve from Objects folder
 
 **NodeFromPath** resolves a dot-separated path from the server's Objects folder (namespace 0):
@@ -299,6 +319,23 @@ if err != nil {
     log.Fatal(err)
 }
 dv, err := c.ReadValue(ctx, node.ID)
+```
+
+**NodeFromQualifiedPath** uses namespace-qualified path syntax: each segment is `ns:name` (e.g. `0:Server.0:ServerStatus` or `2:DeviceSet.4:PLC_Name`). Namespace indices are decimal (0–65535). Use this when different path segments belong to different namespaces:
+
+```go
+node, err := c.NodeFromQualifiedPath(ctx, "0:Server.0:ServerStatus")
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+**Symbolic node names:** For a single well-known standard node (e.g. `CurrentTime` → i=2258, `ServerStatus` → i=2256, `Objects` → i=85), use `StandardNodeID(name)` to get a `*ua.NodeID` without parsing. Useful for CLI flags like `get value -n CurrentTime`. Returns `(nil, false)` if the name is not in the standard set.
+
+```go
+if nodeID, ok := opcua.StandardNodeID("CurrentTime"); ok {
+    v, _ := c.Node(nodeID).Value(ctx)
+}
 ```
 
 ### From a custom starting node

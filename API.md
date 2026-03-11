@@ -27,7 +27,8 @@ func (c *Client) State() ConnState
 ```
 
 `Connect` establishes a secure channel **and** creates/activates a session.
-`Dial` establishes a secure channel only (no session).
+`Dial` establishes a secure channel only (no session; TCP + HEL/ACK + OpenSecureChannel).
+For TCP-only reachability checks (e.g. connection diagnostics or "ping" without creating a session), use [uacp.DialTCP](uacp package); the CLI can infer TCP failure from connection errors if that helper is not used.
 `Close` tears down session, secure channel, and TCP connection.
 
 #### Session management
@@ -90,14 +91,19 @@ func (c *Client) BrowseAll(ctx context.Context, nodeID *ua.NodeID) ([]*ua.Refere
 
 #### Browse path translation (path to NodeID)
 
-Resolve a dot-separated browse path to a Node, starting from the server's Objects folder:
+| Method | Start node | Namespace | Error behavior |
+|--------|------------|-----------|----------------|
+| `NodeFromPath(ctx, path)` | Objects folder (i=85) | All segments ns=0 | (nil, err) if path not found, service fails, or not connected |
+| `NodeFromPathInNamespace(ctx, ns, path)` | Objects folder (i=85) | All segments use ns | Same |
+| `NodeFromQualifiedPath(ctx, path)` | Objects folder (i=85) | Per-segment `ns:` prefix | (nil, err) if path invalid, not found, service fails, or not connected |
 
 ```go
 func (c *Client) NodeFromPath(ctx context.Context, path string) (*Node, error)
 func (c *Client) NodeFromPathInNamespace(ctx context.Context, ns uint16, path string) (*Node, error)
+func (c *Client) NodeFromQualifiedPath(ctx context.Context, path string) (*Node, error)
 ```
 
-`NodeFromPath` uses namespace 0 for all path segments. `NodeFromPathInNamespace` uses the given namespace index for all segments. See [Resolving paths to nodes](docs/client-guide.md#resolving-paths-to-nodes-browse-path-translation) in the client guide.
+Path: `NodeFromPath` / `NodeFromPathInNamespace` use dot-separated browse names (e.g. `"Server.ServerStatus"`). `NodeFromQualifiedPath` uses namespace-qualified segments `ns:name` (e.g. `"0:Server.0:ServerStatus"` or `"2:DeviceSet.4:PLC_Name"`). For a custom start node, use the Node methods `TranslateBrowsePathInNamespaceToNodeID` or `TranslateBrowsePathsToNodeIDs` below. See [Resolving paths to nodes](docs/client-guide.md#resolving-paths-to-nodes-browse-path-translation) in the client guide.
 
 #### History
 
@@ -164,6 +170,7 @@ func (c *Client) Node(id *ua.NodeID) *Node
 func (c *Client) NodeFromExpandedNodeID(id *ua.ExpandedNodeID) *Node
 func (c *Client) NodeFromPath(ctx context.Context, path string) (*Node, error)
 func (c *Client) NodeFromPathInNamespace(ctx context.Context, ns uint16, path string) (*Node, error)
+func (c *Client) NodeFromQualifiedPath(ctx context.Context, path string) (*Node, error)
 ```
 
 #### Discovery
@@ -258,12 +265,17 @@ func (n *Node) BrowseAll(ctx context.Context, refs uint32, dir ua.BrowseDirectio
 
 Resolve a path of browse names to a NodeID (TranslateBrowsePathsToNodeIDs service):
 
+| Method | Start node | Namespace | Error behavior |
+|--------|------------|-----------|----------------|
+| `TranslateBrowsePathInNamespaceToNodeID(ctx, ns, browsePath)` | Receiver n | All segments use ns | (nil, err) if path not found, service fails, or not connected; err may be ua.StatusCode |
+| `TranslateBrowsePathsToNodeIDs(ctx, pathNames)` | Receiver n | Per-segment (pathNames[i].NamespaceIndex) | Same |
+
 ```go
 func (n *Node) TranslateBrowsePathsToNodeIDs(ctx context.Context, pathNames []*ua.QualifiedName) (*ua.NodeID, error)
 func (n *Node) TranslateBrowsePathInNamespaceToNodeID(ctx context.Context, ns uint16, browsePath string) (*ua.NodeID, error)
 ```
 
-`TranslateBrowsePathInNamespaceToNodeID` splits `browsePath` on `.` and builds a path of [QualifiedName](https://pkg.go.dev/github.com/otfabric/opcua/ua#QualifiedName) segments in the given namespace. Use these when the path starts from this node (e.g. a custom root). For paths from the server's Objects folder, use `Client.NodeFromPath` or `Client.NodeFromPathInNamespace` instead.
+`TranslateBrowsePathInNamespaceToNodeID` splits `browsePath` on "." and builds a path of [QualifiedName](https://pkg.go.dev/github.com/otfabric/opcua/ua#QualifiedName) segments in the given namespace. Use when the path starts from this node (e.g. custom root). For paths from the server's Objects folder, use `Client.NodeFromPath` or `Client.NodeFromPathInNamespace` instead.
 
 #### Walk
 
@@ -518,9 +530,15 @@ All option functions return `Option` and are passed to `NewClient`:
 ```go
 func NewMonitoredItemCreateRequestWithDefaults(nodeID *ua.NodeID, attributeID ua.AttributeID, clientHandle uint32) *ua.MonitoredItemCreateRequest
 func ReferenceTypeDisplayName(refTypeID *ua.NodeID) string
+func DataTypeDisplayName(dataTypeID *ua.NodeID) string
+func StandardNodeID(name string) (*ua.NodeID, bool)
 ```
 
+`StandardNodeID` returns the namespace-0 NodeID for a well-known standard node name (e.g. "CurrentTime" → i=2258, "ServerStatus" → i=2256, "Objects" → i=85). Use for CLI or config that accepts symbolic names like `-n CurrentTime` instead of `-n i=2258`. Uses [id.NodeIDByName](id package) under the hood. Returns (nil, false) if the name is not found.
+
 `ReferenceTypeDisplayName` returns a display string for a reference type NodeID: the standard name (e.g. "HasComponent", "Organizes") for well-known types in namespace 0, otherwise the NodeID string. Use when displaying the reference type column in browse refs.
+
+`DataTypeDisplayName` returns a display string for a DataType NodeID: the standard name (e.g. "Float", "String", "UtcTime") for well-known types in namespace 0, otherwise the NodeID string. Use when displaying DataType attributes or type columns to normalize type rendering.
 
 ---
 
@@ -559,6 +577,7 @@ func (v *Variant) Type() TypeID
 func (v *Variant) Value() interface{}
 func (v *Variant) ArrayLength() int32
 func (v *Variant) ArrayDimensions() []int32
+func (v *Variant) IsArray() bool
 func (v *Variant) EncodingMask() byte
 func (v *Variant) Has(mask byte) bool
 func (v *Variant) Decode(b []byte) (int, error)
@@ -644,6 +663,8 @@ func (n *NodeID) SetIndexFlag()
 func (n *NodeID) Decode(b []byte) (int, error)
 func (n *NodeID) Encode() ([]byte, error)
 ```
+
+`String()` returns the canonical form: `i=<id>`, `s=<id>`, `g=<id>`, or `b=<id>` for namespace 0; `ns=<n>;...` for ns ≠ 0. Namespace 0 is omitted so round-trip with ParseNodeID is consistent (e.g. `"i=85"` not `"ns=0;i=85"`).
 
 ---
 
@@ -748,10 +769,14 @@ const (
 
 ```go
 func (s StatusCode) Error() string
+func (s StatusCode) Symbol() string
+func (s StatusCode) Uint32() uint32
 func (s StatusCode) IsGood() bool
 func (s StatusCode) IsBad() bool
 func (s StatusCode) IsUncertain() bool
 ```
+
+`Uint32()` returns the raw 32-bit value for consistent CSV/JSON serialization. `Error()` returns a verbose message (e.g. "The operation succeeded. StatusGood (0x0)"); `Symbol()` returns the short symbolic name only (e.g. "Good", "BadServiceUnsupported", "BadUserAccessDenied"), stripping the "Status" prefix. Use `Symbol()` for compact status rendering.
 
 ---
 
@@ -1486,6 +1511,14 @@ type Dialer struct {
 func (d *Dialer) Dial(ctx context.Context, endpoint string) (*Conn, error)
 ```
 
+`Dial` performs TCP connect, OPC UA HEL/ACK handshake, and returns a UACP `*Conn`. For TCP-only reachability (e.g. ping or diagnostics without HEL/ACK), use `DialTCP`.
+
+```go
+func DialTCP(ctx context.Context, endpoint string) (net.Conn, error)
+```
+
+`DialTCP` parses the endpoint URL and opens a raw TCP connection to the host:port. No OPC UA protocol is performed. The caller must close the returned connection. Use for TCP reachability tests when fine-grained diagnostics are needed.
+
 ### Listener
 
 ```go
@@ -1610,3 +1643,15 @@ func ReferenceTypeName(id uint32) string
 ```
 
 `ReferenceTypeName` returns the standard OPC UA name for a well-known reference type in namespace 0 (e.g. 47 → "HasComponent", 35 → "Organizes"), or "" if unknown. Use when displaying reference type NodeIDs (e.g. browse refs) to show names instead of raw NodeIDs. For a single call that accepts a NodeID and returns either the name or the NodeID string, use [ReferenceTypeDisplayName](opcua package) in the root package.
+
+```go
+func DataTypeName(id uint32) string
+```
+
+`DataTypeName` returns the standard OPC UA name for a well-known DataType in namespace 0 (e.g. 10 → "Float", 12 → "String", 294 → "UtcTime"), or "" if unknown. Use when displaying DataType NodeIDs to normalize type rendering. For a NodeID-based helper, use [DataTypeDisplayName](opcua package) in the root package.
+
+```go
+func NodeIDByName(name string) (uint32, bool)
+```
+
+`NodeIDByName` is the reverse of `Name`: it maps well-known standard node names (namespace 0 only) to numeric IDs. Names include full spec names (e.g. "Server", "ObjectsFolder", "Server_ServerStatus_CurrentTime") and short aliases "CurrentTime" (→ 2258), "ServerStatus" (→ 2256), "Objects" (→ 85). Returns (0, false) if not found. For a `*ua.NodeID` use [StandardNodeID](opcua package) in the root package.

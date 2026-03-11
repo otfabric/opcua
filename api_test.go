@@ -374,3 +374,42 @@ func TestNodeFromPathInNamespace(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int32(42), v.Value())
 }
+
+func TestNodeFromQualifiedPath(t *testing.T) {
+	t.Run("invalid path no namespace prefix", func(t *testing.T) {
+		_, url := testutil.NewTestServer(t)
+		c := testutil.NewTestClient(t, url)
+		_, err := c.NodeFromQualifiedPath(context.Background(), "Server")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing namespace prefix")
+	})
+	t.Run("invalid path namespace not numeric", func(t *testing.T) {
+		_, url := testutil.NewTestServer(t)
+		c := testutil.NewTestClient(t, url)
+		_, err := c.NodeFromQualifiedPath(context.Background(), "x:Server")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "namespace")
+	})
+	t.Run("empty path", func(t *testing.T) {
+		_, url := testutil.NewTestServer(t)
+		c := testutil.NewTestClient(t, url)
+		_, err := c.NodeFromQualifiedPath(context.Background(), "")
+		require.Error(t, err)
+	})
+	t.Run("valid single segment", func(t *testing.T) {
+		_, url := testutil.NewTestServer(t)
+		c := testutil.NewTestClient(t, url)
+		node, err := c.NodeFromQualifiedPath(context.Background(), "0:Server")
+		require.NoError(t, err)
+		require.NotNil(t, node)
+		require.NotNil(t, node.ID)
+	})
+	t.Run("valid multi segment", func(t *testing.T) {
+		_, url := testutil.NewTestServer(t)
+		c := testutil.NewTestClient(t, url)
+		node, err := c.NodeFromQualifiedPath(context.Background(), "0:Server.0:ServerStatus")
+		require.NoError(t, err)
+		require.NotNil(t, node)
+		require.NotNil(t, node.ID)
+	})
+}
