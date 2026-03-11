@@ -3,6 +3,7 @@ package opcua
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -165,6 +166,10 @@ func (s *Subscription) ModifySubscription(ctx context.Context, params Subscripti
 	return res, nil
 }
 
+// Monitor creates monitored items on the server for data change or event notifications.
+// If the server closes the connection (e.g. because it does not support event or alarm
+// subscriptions), the returned error wraps io.EOF with a message suggesting that the
+// server may not support event or alarm subscriptions; callers can use errors.Is(err, io.EOF).
 func (s *Subscription) Monitor(ctx context.Context, ts ua.TimestampsToReturn, items ...*ua.MonitoredItemCreateRequest) (*ua.CreateMonitoredItemsResponse, error) {
 	stats.Subscription().Add("Monitor", 1)
 	stats.Subscription().Add("MonitoredItems", int64(len(items)))
@@ -177,8 +182,10 @@ func (s *Subscription) Monitor(ctx context.Context, ts ua.TimestampsToReturn, it
 	}
 
 	res, err := send[ua.CreateMonitoredItemsResponse](ctx, s.c, req)
-
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("connection closed while creating monitored items (server may not support event or alarm subscriptions): %w", err)
+		}
 		return nil, err
 	}
 

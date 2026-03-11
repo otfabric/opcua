@@ -123,6 +123,8 @@ func (b *SubscriptionBuilder) MonitorEvents(filter *ua.EventFilter, nodeIDs ...*
 
 // Start creates the subscription and monitored items on the server.
 // It returns the subscription and the notification channel.
+// If the server closes the connection during creation, the error may wrap io.EOF
+// with a message suggesting the server may not support subscriptions or event/alarm monitoring.
 func (b *SubscriptionBuilder) Start(ctx context.Context) (*Subscription, chan *PublishNotificationData, error) {
 	if b.notifyCh == nil {
 		b.notifyCh = make(chan *PublishNotificationData, 256)

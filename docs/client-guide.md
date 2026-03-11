@@ -393,6 +393,8 @@ Builder options:
 - `NotifyChannel(ch)` — Use a custom notification channel
 - `Timestamps(ts)` — Timestamps to return
 
+If the server closes the connection during `Subscribe` (CreateSubscription) or `Monitor` (CreateMonitoredItems)—for example when the server does not support event or alarm subscriptions—the returned error wraps `io.EOF` with a message suggesting that limitation. Use `errors.Is(err, io.EOF)` to detect it. This applies both to `Start()` (which calls both) and to direct `Subscribe`/`Monitor` calls.
+
 ### Manual Subscription
 
 ```go
@@ -423,6 +425,8 @@ for msg := range notifyCh {
     // ...
 }
 ```
+
+The same EOF wrapping applies: if the server closes the connection during `Subscribe` or `Monitor`, the error wraps `io.EOF` with a hint; use `errors.Is(err, io.EOF)` to detect it.
 
 ### Monitor Package (Callback-Based)
 

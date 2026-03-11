@@ -183,6 +183,8 @@ func (c *Client) SetPublishingMode(ctx context.Context, publishingEnabled bool, 
 func (c *Client) NewSubscription() *SubscriptionBuilder
 ```
 
+If the server closes the connection during CreateSubscription, the returned error may wrap `io.EOF` with a message suggesting the server may not support subscriptions; use `errors.Is(err, io.EOF)` to detect it.
+
 #### Low-level send
 
 ```go
@@ -303,6 +305,8 @@ func (s *Subscription) Monitor(ctx context.Context, ts ua.TimestampsToReturn, it
 func (s *Subscription) Unmonitor(ctx context.Context, ids ...uint32) ([]ua.StatusCode, error)
 ```
 
+If the server closes the connection during CreateMonitoredItems (e.g. it does not support event or alarm subscriptions), the error may wrap `io.EOF` with a message suggesting that; use `errors.Is(err, io.EOF)` to detect it.
+
 #### SubscriptionParameters
 
 ```go
@@ -344,6 +348,8 @@ func (b *SubscriptionBuilder) MonitorItems(items ...*ua.MonitoredItemCreateReque
 func (b *SubscriptionBuilder) MonitorEvents(filter *ua.EventFilter, nodeIDs ...*ua.NodeID) *SubscriptionBuilder
 func (b *SubscriptionBuilder) Start(ctx context.Context) (*Subscription, chan *PublishNotificationData, error)
 ```
+
+`Start` calls `Subscribe` then `Monitor`; if the server closes the connection during either step, the returned error may wrap `io.EOF` with a message suggesting the server may not support subscriptions or event/alarm monitoring.
 
 Example:
 

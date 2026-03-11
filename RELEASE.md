@@ -1,3 +1,34 @@
+# Release v0.1.6
+
+**Date:** 2026-03-11
+**Previous release:** v0.1.5
+
+## Summary
+
+Improves error messages when the server closes the connection (EOF) during
+subscription or monitored-item creation. Callers (e.g. `monitor event` /
+`monitor alarm` against servers that do not support event subscriptions) now
+see a clear hint instead of a raw "EOF".
+
+## Client: EOF handling in subscription path
+
+When the server closes the connection instead of returning a service fault
+(e.g. WAGO PLC not supporting OPC UA event or alarm subscriptions), the SDK
+previously surfaced **io.EOF** with no context.
+
+- **`Subscription.Monitor()`** — If the request returns `io.EOF`, the
+  returned error now wraps it with: "connection closed while creating
+  monitored items (server may not support event or alarm subscriptions)".
+  Callers can still use `errors.Is(err, io.EOF)`.
+- **`Client.Subscribe()`** — If `CreateSubscription` returns `io.EOF`, the
+  returned error now wraps it with: "connection closed while creating
+  subscription (server may not support subscriptions)".
+
+Documentation and doc comments for `Monitor` and `SubscriptionBuilder.Start`
+note that connection-close errors may wrap `io.EOF` with this hint.
+
+---
+
 # Release v0.1.5
 
 **Date:** 2026-03-11

@@ -48,6 +48,9 @@ func (c *Client) Subscribe(ctx context.Context, params *SubscriptionParameters, 
 
 	res, err := send[ua.CreateSubscriptionResponse](ctx, c, req)
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("connection closed while creating subscription (server may not support subscriptions): %w", err)
+		}
 		return nil, err
 	}
 	if res.ResponseHeader.ServiceResult != ua.StatusOK {
