@@ -270,9 +270,10 @@ func (n *Node) TranslateBrowsePathInNamespaceToNodeID(ctx context.Context, ns ui
 ```go
 func (n *Node) Walk(ctx context.Context) iter.Seq2[WalkResult, error]
 func (n *Node) WalkLimit(ctx context.Context, maxDepth int) iter.Seq2[WalkResult, error]
+func (n *Node) WalkLimitDedup(ctx context.Context, maxDepth int) iter.Seq2[WalkResult, error]
 ```
 
-`Walk` recursively descends through the node's hierarchical references with no depth limit. `WalkLimit` is like `Walk` but stops recursing when depth reaches `maxDepth`; the node at depth `maxDepth` is still yielded. If `maxDepth < 0`, depth is unlimited (same as `Walk`). Use `WalkLimit` for "find node", "find type", or "browse tree" style tools to avoid unbounded traversal (e.g. pass a `-depth` flag from the CLI).
+`Walk` recursively descends through the node's hierarchical references with no depth limit. `WalkLimit` is like `Walk` but stops recursing when depth reaches `maxDepth`; the node at depth `maxDepth` is still yielded. If `maxDepth < 0`, depth is unlimited (same as `Walk`). Use `WalkLimit` for "find node", "find type", or "browse tree" style tools to avoid unbounded traversal (e.g. pass a `-depth` flag from the CLI). The same node may be yielded more than once if reachable via multiple paths; use `WalkLimitDedup` to yield each node at most once (deduplication by NodeID).
 
 Each yielded `WalkResult` contains:
 
@@ -342,6 +343,7 @@ func (b *SubscriptionBuilder) MaxKeepAliveCount(n uint32) *SubscriptionBuilder
 func (b *SubscriptionBuilder) MaxNotificationsPerPublish(n uint32) *SubscriptionBuilder
 func (b *SubscriptionBuilder) Priority(p uint8) *SubscriptionBuilder
 func (b *SubscriptionBuilder) Timestamps(ts ua.TimestampsToReturn) *SubscriptionBuilder
+func (b *SubscriptionBuilder) SamplingInterval(d time.Duration) *SubscriptionBuilder  // requested sampling interval for Monitor/MonitorEvents items (ms on wire)
 func (b *SubscriptionBuilder) NotifyChannel(ch chan *PublishNotificationData) *SubscriptionBuilder
 func (b *SubscriptionBuilder) Monitor(nodeIDs ...*ua.NodeID) *SubscriptionBuilder
 func (b *SubscriptionBuilder) MonitorItems(items ...*ua.MonitoredItemCreateRequest) *SubscriptionBuilder

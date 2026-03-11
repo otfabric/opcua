@@ -383,7 +383,8 @@ for msg := range notifyCh {
 ```
 
 Builder options:
-- `Interval(d)` — Publishing interval
+- `Interval(d)` — Publishing interval (how often the server sends notifications to the client)
+- `SamplingInterval(d)` — Requested sampling interval for monitored items (how often the server samples each node). Independent of publishing interval. If not set, server uses fastest practical rate.
 - `LifetimeCount(n)` — Lifetime count
 - `MaxKeepAliveCount(n)` — Max keep-alive count
 - `MaxNotificationsPerPublish(n)` — Max notifications per publish

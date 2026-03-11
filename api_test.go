@@ -249,6 +249,31 @@ func TestNodeWalkLimit(t *testing.T) {
 	require.True(t, seenDepth2, "WalkLimit with maxDepth=2 should yield at least one result at depth 2")
 }
 
+func TestNodeWalkLimitDedup(t *testing.T) {
+	_, url := testutil.NewTestServer(t)
+	c := testutil.NewTestClient(t, url)
+	ctx := context.Background()
+
+	n := c.Node(ua.NewNumericNodeID(0, 85)) // Objects folder
+	maxDepth := 3
+	seen := make(map[string]struct{})
+	var count int
+	for wr, err := range n.WalkLimitDedup(ctx, maxDepth) {
+		require.NoError(t, err)
+		require.NotNil(t, wr.Ref)
+		require.LessOrEqual(t, wr.Depth, maxDepth, "WalkLimitDedup must not yield depth > maxDepth")
+		key := wr.Ref.NodeID.String()
+		_, ok := seen[key]
+		require.False(t, ok, "WalkLimitDedup must not yield duplicate NodeID %q", key)
+		seen[key] = struct{}{}
+		count++
+		if count > 300 {
+			break
+		}
+	}
+	require.Greater(t, count, 0, "WalkLimitDedup should yield at least one result")
+}
+
 func TestClientServerStatus(t *testing.T) {
 	_, url := testutil.NewTestServer(t)
 	c := testutil.NewTestClient(t, url)

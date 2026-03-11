@@ -22,11 +22,12 @@ import (
 // If no notification channel is set via [SubscriptionBuilder.NotifyChannel],
 // Start creates a buffered channel with capacity 256.
 type SubscriptionBuilder struct {
-	c          *Client
-	params     SubscriptionParameters
-	notifyCh   chan *PublishNotificationData
-	monitorReq []*ua.MonitoredItemCreateRequest
-	ts         ua.TimestampsToReturn
+	c                *Client
+	params           SubscriptionParameters
+	notifyCh         chan *PublishNotificationData
+	monitorReq       []*ua.MonitoredItemCreateRequest
+	ts               ua.TimestampsToReturn
+	samplingInterval time.Duration // if > 0, applied to Monitor/MonitorEvents items (server-side sampling rate in ms)
 }
 
 // NewSubscription returns a SubscriptionBuilder for configuring a new subscription.
@@ -74,6 +75,16 @@ func (b *SubscriptionBuilder) Timestamps(ts ua.TimestampsToReturn) *Subscription
 	return b
 }
 
+// SamplingInterval sets the requested sampling interval for monitored items added by
+// Monitor or MonitorEvents. The server samples at this rate (in milliseconds); the
+// subscription's publishing interval controls how often notifications are sent to the client.
+// If not set or zero, the server uses the fastest practical rate (0.0 in OPC UA).
+// Call this before Monitor or MonitorEvents to apply to those items.
+func (b *SubscriptionBuilder) SamplingInterval(d time.Duration) *SubscriptionBuilder {
+	b.samplingInterval = d
+	return b
+}
+
 // NotifyChannel sets the channel for receiving notifications.
 // If not set, Start creates a buffered channel with capacity 256.
 func (b *SubscriptionBuilder) NotifyChannel(ch chan *PublishNotificationData) *SubscriptionBuilder {
@@ -84,9 +95,13 @@ func (b *SubscriptionBuilder) NotifyChannel(ch chan *PublishNotificationData) *S
 // Monitor adds node IDs to be monitored for data changes.
 func (b *SubscriptionBuilder) Monitor(nodeIDs ...*ua.NodeID) *SubscriptionBuilder {
 	for _, nid := range nodeIDs {
-		b.monitorReq = append(b.monitorReq, NewMonitoredItemCreateRequestWithDefaults(
+		req := NewMonitoredItemCreateRequestWithDefaults(
 			nid, ua.AttributeIDValue, uint32(len(b.monitorReq)),
-		))
+		)
+		if b.samplingInterval > 0 {
+			req.RequestedParameters.SamplingInterval = float64(b.samplingInterval.Milliseconds())
+		}
+		b.monitorReq = append(b.monitorReq, req)
 	}
 	return b
 }
@@ -101,6 +116,10 @@ func (b *SubscriptionBuilder) MonitorItems(items ...*ua.MonitoredItemCreateReque
 // provided EventFilter. Each node is monitored on AttributeIDEventNotifier.
 func (b *SubscriptionBuilder) MonitorEvents(filter *ua.EventFilter, nodeIDs ...*ua.NodeID) *SubscriptionBuilder {
 	filterEO := ua.NewExtensionObject(filter)
+	samplingMs := 0.0
+	if b.samplingInterval > 0 {
+		samplingMs = float64(b.samplingInterval.Milliseconds())
+	}
 	for _, nid := range nodeIDs {
 		b.monitorReq = append(b.monitorReq, &ua.MonitoredItemCreateRequest{
 			ItemToMonitor: &ua.ReadValueID{
@@ -114,7 +133,7 @@ func (b *SubscriptionBuilder) MonitorEvents(filter *ua.EventFilter, nodeIDs ...*
 				DiscardOldest:    true,
 				Filter:           filterEO,
 				QueueSize:        10,
-				SamplingInterval: 0.0,
+				SamplingInterval: samplingMs,
 			},
 		})
 	}

@@ -1,3 +1,34 @@
+# Release v0.1.8
+
+**Date:** 2026-03-11
+**Previous release:** v0.1.7
+
+## Summary
+
+Adds subscription sampling interval control and a deduplicating walk API:
+callers can set the server-side sampling rate for monitored items independently
+of the publishing interval, and can walk the address space with each node
+yielded at most once.
+
+## Client: Subscription sampling interval
+
+- **`SubscriptionBuilder.SamplingInterval(d time.Duration)`** — Sets the
+  requested sampling interval for monitored items added by `Monitor` or
+  `MonitorEvents`. The server samples at this rate (converted to milliseconds
+  on the wire); the subscription's publishing interval still controls how often
+  notifications are sent to the client. If not set or zero, the server uses
+  the fastest practical rate (unchanged from before).
+
+## Browsing: WalkLimitDedup
+
+- **`Node.WalkLimitDedup(ctx, maxDepth)`** — Same as `WalkLimit` but yields
+  each node at most once, keyed by NodeID. When a node is reachable via
+  multiple hierarchical paths, only the first occurrence (by traversal order) is
+  yielded. Callers no longer need to maintain their own visited set to avoid
+  duplicate nodes.
+
+---
+
 # Release v0.1.7
 
 **Date:** 2026-03-11

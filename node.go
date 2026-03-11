@@ -13,6 +13,14 @@ import (
 	"github.com/otfabric/opcua/ua"
 )
 
+// nodeIDKey returns a string key for deduplication. Returns "" if id is nil.
+func nodeIDKey(id *ua.ExpandedNodeID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
+}
+
 // Node is a high-level object to interact with a node in the
 // address space. It provides common convenience functions to
 // access and manipulate the common attributes of a node.
@@ -45,16 +53,42 @@ func (n *Node) Walk(ctx context.Context) iter.Seq2[WalkResult, error] {
 // The node at depth maxDepth is still yielded. If maxDepth < 0, depth is unlimited.
 // Use this for "find node", "find type", or "browse tree" style tools to avoid
 // unbounded traversal (e.g. pass a -depth flag from the CLI).
+//
+// The same node may be yielded more than once if it is reachable via multiple
+// hierarchical paths. Use WalkLimitDedup to yield each node at most once.
 func (n *Node) WalkLimit(ctx context.Context, maxDepth int) iter.Seq2[WalkResult, error] {
 	return func(yield func(WalkResult, error) bool) {
-		n.walkRecursive(ctx, 0, maxDepth, yield)
+		n.walkRecursive(ctx, 0, maxDepth, nil, yield)
 	}
 }
 
-func (n *Node) walkRecursive(ctx context.Context, depth int, maxDepth int, yield func(WalkResult, error) bool) bool {
+// WalkLimitDedup is like WalkLimit but yields each node at most once, keyed by
+// NodeID. When a node is reachable via multiple hierarchical paths, only the
+// first occurrence (by traversal order) is yielded. Use this to avoid duplicate
+// nodes without implementing a visited set in the caller.
+func (n *Node) WalkLimitDedup(ctx context.Context, maxDepth int) iter.Seq2[WalkResult, error] {
+	return func(yield func(WalkResult, error) bool) {
+		visited := make(map[string]struct{})
+		if n.ID != nil {
+			visited[n.ID.String()] = struct{}{}
+		}
+		n.walkRecursive(ctx, 0, maxDepth, visited, yield)
+	}
+}
+
+func (n *Node) walkRecursive(ctx context.Context, depth int, maxDepth int, visited map[string]struct{}, yield func(WalkResult, error) bool) bool {
 	for ref, err := range n.BrowseAll(ctx, id.HierarchicalReferences, ua.BrowseDirectionForward, ua.NodeClassAll, true) {
 		if err != nil {
 			return yield(WalkResult{}, err)
+		}
+		key := nodeIDKey(ref.NodeID)
+		if visited != nil {
+			if _, seen := visited[key]; seen {
+				continue
+			}
+			if key != "" {
+				visited[key] = struct{}{}
+			}
 		}
 		if !yield(WalkResult{Depth: depth, Ref: ref}, nil) {
 			return false
@@ -63,7 +97,7 @@ func (n *Node) walkRecursive(ctx context.Context, depth int, maxDepth int, yield
 			continue
 		}
 		child := n.c.NodeFromExpandedNodeID(ref.NodeID)
-		if !child.walkRecursive(ctx, depth+1, maxDepth, yield) {
+		if !child.walkRecursive(ctx, depth+1, maxDepth, visited, yield) {
 			return false
 		}
 	}

@@ -153,7 +153,7 @@ func main() {
 | **Connection** | Secure channel, session management, auto-reconnect, connection state callbacks, `SkipNamespaceUpdate` |
 | **Reading** | Single/batch reads, all attributes, `Node.Value()`, `Node.Summary()` |
 | **Writing** | Single/batch writes, any attribute, `WriteValue`, `WriteAttribute` |
-| **Browsing** | Forward/inverse/both, continuation points, `BrowseAll`, `Walk` / `WalkLimit` (depth-limited) iterator |
+| **Browsing** | Forward/inverse/both, continuation points, `BrowseAll`, `Walk` / `WalkLimit` (depth-limited), `WalkLimitDedup` (no duplicate nodes) |
 | **Path resolution** | `NodeFromPath`, `NodeFromPathInNamespace`, `Node.TranslateBrowsePathInNamespaceToNodeID` (TranslateBrowsePathsToNodeIDs) |
 | **Subscriptions** | Data-change, events, modify/cancel, `SetTriggering`, `SetPublishingMode`, builder API |
 | **Methods** | `Call`, `CallMethod` (auto-wrap args), `MethodArguments` introspection |
