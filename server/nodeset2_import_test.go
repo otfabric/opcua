@@ -53,6 +53,26 @@ func TestImportNodeSet_DefaultNodeSet(t *testing.T) {
 		n := ns0.Node(ua.NewNumericNodeID(0, id.HasComponent))
 		require.NotNil(t, n, "HasComponent should exist")
 	})
+
+	t.Run("RolePermissions populated from defaults", func(t *testing.T) {
+		// AuditActivateSessionEventType (i=2075) is an ObjectType with default
+		// permissions in DefaultNodePermissions.
+		n := ns0.Node(ua.NewNumericNodeID(0, id.AuditActivateSessionEventType))
+		require.NotNil(t, n, "AuditActivateSessionEventType should exist")
+
+		av, err := n.Attribute(ua.AttributeIDRolePermissions)
+		require.NoError(t, err)
+		require.NotNil(t, av)
+		require.NotNil(t, av.Value)
+		require.NotNil(t, av.Value.Value)
+
+		perms, ok := av.Value.Value.Value().([]*ua.ExtensionObject)
+		require.True(t, ok, "RolePermissions should be []*ua.ExtensionObject")
+		assert.NotEmpty(t, perms, "should have at least one role-permission entry")
+		rp, ok := perms[0].Value.(*ua.RolePermissionType)
+		require.True(t, ok, "first entry should be *ua.RolePermissionType")
+		assert.NotNil(t, rp.RoleID, "RoleID should not be nil")
+	})
 }
 
 func TestImportNodeSet_Custom(t *testing.T) {

@@ -72,6 +72,8 @@ func browse(ctx context.Context, n *opcua.Node, path string, level int) ([]NodeD
 	switch err := attrs[0].Status; err {
 	case ua.StatusOK:
 		def.NodeClass = ua.NodeClass(attrs[0].Value.Int())
+	case ua.StatusBadSecurityModeInsufficient, ua.StatusBadUserAccessDenied:
+		return nil, nil
 	default:
 		return nil, err
 	}

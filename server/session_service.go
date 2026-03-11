@@ -112,6 +112,18 @@ func (s *SessionService) ActivateSession(ctx context.Context, sc *uasc.SecureCha
 	}
 	sess.serverNonce = nonce
 
+	// Extract user identity and resolve roles.
+	if req.UserIdentityToken != nil {
+		if token, ok := req.UserIdentityToken.Value.(ua.IdentityToken); ok {
+			sess.identityToken = token
+		}
+	}
+	if rm := s.srv.cfg.roleMapper; rm != nil {
+		sess.roles = rm(sess.identityToken)
+	} else {
+		sess.roles = DefaultRoleMapper(sess.identityToken)
+	}
+
 	response := &ua.ActivateSessionResponse{
 		ResponseHeader: responseHeader(req.RequestHeader.RequestHandle, ua.StatusOK),
 		ServerNonce:    nonce,

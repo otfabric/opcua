@@ -12,42 +12,6 @@ const (
 	NodeClassAll NodeClass = 0xff
 )
 
-// Identifiers assigned to Attributes.
-//
-// Specification: Part 6, A.1
-type AttributeID uint32
-
-const (
-	AttributeIDInvalid                 AttributeID = 0
-	AttributeIDNodeID                  AttributeID = 1
-	AttributeIDNodeClass               AttributeID = 2
-	AttributeIDBrowseName              AttributeID = 3
-	AttributeIDDisplayName             AttributeID = 4
-	AttributeIDDescription             AttributeID = 5
-	AttributeIDWriteMask               AttributeID = 6
-	AttributeIDUserWriteMask           AttributeID = 7
-	AttributeIDIsAbstract              AttributeID = 8
-	AttributeIDSymmetric               AttributeID = 9
-	AttributeIDInverseName             AttributeID = 10
-	AttributeIDContainsNoLoops         AttributeID = 11
-	AttributeIDEventNotifier           AttributeID = 12
-	AttributeIDValue                   AttributeID = 13
-	AttributeIDDataType                AttributeID = 14
-	AttributeIDValueRank               AttributeID = 15
-	AttributeIDArrayDimensions         AttributeID = 16
-	AttributeIDAccessLevel             AttributeID = 17
-	AttributeIDUserAccessLevel         AttributeID = 18
-	AttributeIDMinimumSamplingInterval AttributeID = 19
-	AttributeIDHistorizing             AttributeID = 20
-	AttributeIDExecutable              AttributeID = 21
-	AttributeIDUserExecutable          AttributeID = 22
-	AttributeIDDataTypeDefinition      AttributeID = 23
-	AttributeIDRolePermissions         AttributeID = 24
-	AttributeIDUserRolePermissions     AttributeID = 25
-	AttributeIDAccessRestrictions      AttributeID = 26
-	AttributeIDAccessLevelEx           AttributeID = 27
-)
-
 // Built-in type identifiers.
 //
 // All OPC UA DataEncodings are based on rules that are defined for a standard

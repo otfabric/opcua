@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"io"
@@ -15,7 +16,7 @@ import (
 	"github.com/otfabric/opcua/cmd/service/goname"
 )
 
-var in, out, pkg string
+var in, out, pkg, nodeids string
 
 func main() {
 	log.SetFlags(0)
@@ -23,6 +24,7 @@ func main() {
 	flag.StringVar(&in, "in", "schema/Opc.Ua.Types.bsd", "Path to Opc.Ua.Types.bsd file")
 	flag.StringVar(&out, "out", "ua", "Path to output directory")
 	flag.StringVar(&pkg, "pkg", "ua", "Go package name")
+	flag.StringVar(&nodeids, "nodeids", "schema/NodeIds.csv", "Path to NodeIds.csv")
 	flag.Parse()
 
 	dict, err := ReadTypes(in)
@@ -30,10 +32,44 @@ func main() {
 		log.Fatalf("Failed to read type definitions: %s", err)
 	}
 
+	nodeIDSet := loadNodeIDs(nodeids)
+
 	writeEnums(Enums(dict))
 	writeServiceRegister(ExtObjects(dict))
 	writeExtObjects(ExtObjects(dict))
-	writeRegisterExtObjects(ExtObjects(dict))
+	writeRegisterExtObjects(filterByBinaryEncoding(ExtObjects(dict), nodeIDSet))
+}
+
+// loadNodeIDs reads NodeIds.csv and returns a set of all identifier names.
+func loadNodeIDs(filename string) map[string]bool {
+	f, err := os.Open(filename)
+	if err != nil {
+		log.Fatalf("Error reading %s: %v", filename, err)
+	}
+	defer f.Close()
+
+	rows, err := csv.NewReader(f).ReadAll()
+	if err != nil {
+		log.Fatalf("Error parsing %s: %v", filename, err)
+	}
+
+	ids := make(map[string]bool, len(rows))
+	for _, row := range rows {
+		ids[row[0]] = true
+	}
+	return ids
+}
+
+// filterByBinaryEncoding returns only types that have a corresponding
+// _Encoding_DefaultBinary entry in NodeIds.csv.
+func filterByBinaryEncoding(objs []Type, nodeIDs map[string]bool) []Type {
+	var filtered []Type
+	for _, o := range objs {
+		if nodeIDs[o.Name+"_Encoding_DefaultBinary"] {
+			filtered = append(filtered, o)
+		}
+	}
+	return filtered
 }
 
 func writeEnums(enums []Type) {

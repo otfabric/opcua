@@ -41,6 +41,14 @@ type EndpointType struct {
 	TransportProfileURI string
 }
 
+type BitFieldDefinition struct {
+	Name                string
+	Description         *LocalizedText
+	Reserved            bool
+	StartingBitPosition uint32
+	EndingBitPosition   uint32
+}
+
 type RationalNumber struct {
 	Numerator   int32
 	Denominator uint32
@@ -89,6 +97,30 @@ type CurrencyUnitType struct {
 	Currency       *LocalizedText
 }
 
+type AnnotationDataType struct {
+	Annotation string
+	Discipline string
+	URI        string
+}
+
+type LinearConversionDataType struct {
+	InitialAddend float32
+	Multiplicand  float32
+	Divisor       float32
+	FinalAddend   float32
+}
+
+type QuantityDimension struct {
+	MassExponent                int8
+	LengthExponent              int8
+	TimeExponent                int8
+	ElectricCurrentExponent     int8
+	AmountOfSubstanceExponent   int8
+	LuminousIntensityExponent   int8
+	AbsoluteTemperatureExponent int8
+	DimensionlessExponent       int8
+}
+
 type TrustListDataType struct {
 	SpecifiedLists      uint32
 	TrustedCertificates [][]byte
@@ -97,10 +129,109 @@ type TrustListDataType struct {
 	IssuerCrls          [][]byte
 }
 
+type BaseConfigurationDataType struct {
+	ConfigurationVersion    uint32
+	ConfigurationProperties []*KeyValuePair
+}
+
+type BaseConfigurationRecordDataType struct {
+	Name             string
+	RecordProperties []*KeyValuePair
+}
+
+type CertificateGroupDataType struct {
+	Name                  string
+	RecordProperties      []*KeyValuePair
+	Purpose               *NodeID
+	CertificateTypes      []*NodeID
+	IsCertificateAssigned []bool
+	ValidationOptions     TrustListValidationOptions
+}
+
+type ConfigurationUpdateTargetType struct {
+	Path       string
+	UpdateType ConfigurationUpdateType
+}
+
 type TransactionErrorType struct {
 	TargetID *NodeID
 	Error    StatusCode
 	Message  *LocalizedText
+}
+
+type ApplicationConfigurationDataType struct {
+	ConfigurationVersion    uint32
+	ConfigurationProperties []*KeyValuePair
+	ApplicationIdentity     *ApplicationIdentityDataType
+	CertificateGroups       []*CertificateGroupDataType
+	ServerEndpoints         []*ServerEndpointDataType
+	ClientEndpoints         []*EndpointDataType
+	SecuritySettings        []*SecuritySettingsDataType
+	UserTokenSettings       []*UserTokenSettingsDataType
+	AuthorizationServices   []*AuthorizationServiceConfigurationDataType
+}
+
+type ApplicationIdentityDataType struct {
+	Name              string
+	RecordProperties  []*KeyValuePair
+	ApplicationURI    string
+	ApplicationNames  []*LocalizedText
+	AdditionalServers []*ApplicationDescription
+}
+
+type EndpointDataType struct {
+	Name             string
+	RecordProperties []*KeyValuePair
+	DiscoveryURLs    []string
+	NetworkName      string
+	Port             uint16
+}
+
+type ServerEndpointDataType struct {
+	Name                  string
+	RecordProperties      []*KeyValuePair
+	DiscoveryURLs         []string
+	NetworkName           string
+	Port                  uint16
+	EndpointURLs          []string
+	SecuritySettingNames  []string
+	TransportProfileURI   string
+	UserTokenSettingNames []string
+	ReverseConnectURLs    []string
+}
+
+type SecuritySettingsDataType struct {
+	Name                 string
+	RecordProperties     []*KeyValuePair
+	SecurityModes        []MessageSecurityMode
+	SecurityPolicyURIs   []string
+	CertificateGroupName string
+}
+
+type UserTokenSettingsDataType struct {
+	Name                     string
+	RecordProperties         []*KeyValuePair
+	TokenType                UserTokenType
+	IssuedTokenType          string
+	IssuerEndpointURL        string
+	SecurityPolicyURI        string
+	CertificateGroupName     string
+	AuthorizationServiceName string
+}
+
+type ServiceCertificateDataType struct {
+	Certificate []byte
+	Issuers     [][]byte
+	ValidFrom   time.Time
+	ValidTo     time.Time
+}
+
+type AuthorizationServiceConfigurationDataType struct {
+	Name                   string
+	RecordProperties       []*KeyValuePair
+	ServiceURI             string
+	ServiceCertificates    []*ServiceCertificateDataType
+	IssuerEndpointSettings string
 }
 
 type DataTypeSchemaHeader struct {
@@ -223,6 +354,28 @@ type PublishedEventsDataType struct {
 
 type PublishedDataSetCustomSourceDataType struct {
 	CyclicDataSet bool
+}
+
+type ActionTargetDataType struct {
+	ActionTargetID uint16
+	Name           string
+	Description    *LocalizedText
+}
+
+type PublishedActionDataType struct {
+	RequestDataSetMetaData *DataSetMetaDataType
+	ActionTargets          []*ActionTargetDataType
+}
+
+type ActionMethodDataType struct {
+	ObjectID *NodeID
+	MethodID *NodeID
+}
+
+type PublishedActionMethodDataType struct {
+	RequestDataSetMetaData *DataSetMetaDataType
+	ActionTargets          []*ActionTargetDataType
+	ActionMethods          []*ActionMethodDataType
 }
 
 type DataSetWriterDataType struct {
@@ -501,6 +654,14 @@ type DatagramDataSetReaderTransportDataType struct {
 	Topic       string
 }
 
+type DtlsPubSubConnectionDataType struct {
+	ClientCipherSuite       string
+	ServerCipherSuites      []string
+	ZeroRTT                 bool
+	CertificateGroupID      *NodeID
+	VerifyClientCertificate bool
+}
+
 type BrokerConnectionTransportDataType struct {
 	ResourceURI              string
 	AuthenticationProfileURI string
@@ -543,6 +704,138 @@ type PubSubConfigurationValueDataType struct {
 	IDentifier           *Variant
 }
 
+type JSONNetworkMessage struct {
+	MessageID       string
+	MessageType     string
+	PublisherID     string
+	WriterGroupName string
+	DataSetClassID  string
+	Messages        []*ExtensionObject
+}
+
+type JSONDataSetMessage struct {
+	DataSetWriterID   uint16
+	DataSetWriterName string
+	PublisherID       string
+	WriterGroupName   string
+	SequenceNumber    uint32
+	MetaDataVersion   *ConfigurationVersionDataType
+	MinorVersion      uint32
+	Timestamp         time.Time
+	Status            StatusCode
+	MessageType       string
+	Payload           *ExtensionObject
+}
+
+type JSONDataSetMetaDataMessage struct {
+	MessageID         string
+	MessageType       string
+	PublisherID       string
+	DataSetWriterID   uint16
+	WriterGroupName   string
+	DataSetWriterName string
+	Timestamp         time.Time
+	MetaData          *DataSetMetaDataType
+}
+
+type JSONApplicationDescriptionMessage struct {
+	MessageID          string
+	MessageType        string
+	PublisherID        string
+	Timestamp          time.Time
+	Description        *ApplicationDescription
+	ServerCapabilities []string
+}
+
+type JSONServerEndpointsMessage struct {
+	MessageID   string
+	MessageType string
+	PublisherID string
+	Timestamp   time.Time
+	Description *ApplicationDescription
+	Endpoints   []*EndpointDescription
+}
+
+type JSONStatusMessage struct {
+	MessageID      string
+	MessageType    string
+	PublisherID    string
+	Timestamp      time.Time
+	IsCyclic       bool
+	Status         PubSubState
+	NextReportTime time.Time
+}
+
+type JSONPubSubConnectionMessage struct {
+	MessageID   string
+	MessageType string
+	PublisherID string
+	Timestamp   time.Time
+	Connection  *PubSubConnectionDataType
+}
+
+type JSONActionMetaDataMessage struct {
+	MessageID         string
+	MessageType       string
+	PublisherID       string
+	DataSetWriterID   uint16
+	DataSetWriterName string
+	Timestamp         time.Time
+	ActionTargets     []*ActionTargetDataType
+	Request           *DataSetMetaDataType
+	Response          *DataSetMetaDataType
+	ActionMethods     []*ActionMethodDataType
+}
+
+type JSONActionResponderMessage struct {
+	MessageID   string
+	MessageType string
+	PublisherID string
+	Timestamp   time.Time
+	Connection  *PubSubConnectionDataType
+}
+
+type JSONActionNetworkMessage struct {
+	MessageID       string
+	MessageType     string
+	PublisherID     string
+	Timestamp       time.Time
+	ResponseAddress string
+	CorrelationData []byte
+	RequestorID     string
+	TimeoutHint     float64
+	Messages        []*ExtensionObject
+}
+
+type JSONActionRequestMessage struct {
+	DataSetWriterID   uint16
+	ActionTargetID    uint16
+	DataSetWriterName string
+	WriterGroupName   string
+	MetaDataVersion   *ConfigurationVersionDataType
+	MinorVersion      uint32
+	Timestamp         time.Time
+	MessageType       string
+	RequestID         uint16
+	ActionState       ActionState
+	Payload           *ExtensionObject
+}
+
+type JSONActionResponseMessage struct {
+	DataSetWriterID   uint16
+	ActionTargetID    uint16
+	DataSetWriterName string
+	WriterGroupName   string
+	MetaDataVersion   *ConfigurationVersionDataType
+	MinorVersion      uint32
+	Timestamp         time.Time
+	Status            StatusCode
+	MessageType       string
+	RequestID         uint16
+	ActionState       ActionState
+	Payload           *ExtensionObject
+}
+
 type AliasNameDataType struct {
 	AliasName       *QualifiedName
 	ReferencedNodes []*ExpandedNodeID
@@ -561,6 +854,27 @@ type PriorityMappingEntryType struct {
 	PriorityValue_DSCP uint32
 }
 
+type LldpManagementAddressTxPortType struct {
+	AddressSubtype uint32
+	ManAddress     string
+	TxEnable       bool
+	AddrLen        uint32
+	IfSubtype      ManAddrIfSubtype
+	IfID           uint32
+}
+
+type LldpManagementAddressType struct {
+	AddressSubtype uint32
+	Address        string
+	IfSubtype      ManAddrIfSubtype
+	IfID           uint32
+}
+
+type LldpTlvType struct {
+	TlvType uint32
+	TlvInfo []byte
+}
+
 type ReferenceDescriptionDataType struct {
 	SourceNode    *NodeID
 	ReferenceType *NodeID
@@ -572,6 +886,38 @@ type ReferenceListEntryDataType struct {
 	ReferenceType *NodeID
 	IsForward     bool
 	TargetNode    *ExpandedNodeID
+}
+
+type LogRecord struct {
+	Time           time.Time
+	Severity       uint16
+	EventType      *NodeID
+	SourceNode     *NodeID
+	SourceName     string
+	Message        *LocalizedText
+	TraceContext   *TraceContextDataType
+	AdditionalData []*NameValuePair
+}
+
+type LogRecordsDataType struct {
+	LogRecordArray []*LogRecord
+}
+
+type SpanContextDataType struct {
+	TraceID *GUID
+	SpanID  uint64
+}
+
+type TraceContextDataType struct {
+	TraceID          *GUID
+	SpanID           uint64
+	ParentSpanID     uint64
+	ParentIDentifier string
+}
+
+type NameValuePair struct {
+	Name  string
+	Value *Variant
 }
 
 type RolePermissionType struct {
@@ -1747,6 +2093,27 @@ type ReadEventDetails struct {
 	Filter           *EventFilter
 }
 
+type ReadEventDetails2 struct {
+	NumValuesPerNode uint32
+	StartTime        time.Time
+	EndTime          time.Time
+	Filter           *EventFilter
+	ReadModified     bool
+}
+
+type SortRuleElement struct {
+	SortOrder  SortOrderType
+	EventField *SimpleAttributeOperand
+}
+
+type ReadEventDetailsSorted struct {
+	NumValuesPerNode uint32
+	StartTime        time.Time
+	EndTime          time.Time
+	Filter           *EventFilter
+	SortClause       []*SortRuleElement
+}
+
 type ReadRawModifiedDetails struct {
 	IsReadModified   bool
 	StartTime        time.Time
@@ -1789,6 +2156,11 @@ type HistoryModifiedData struct {
 
 type HistoryEvent struct {
 	Events []*HistoryEventFieldList
+}
+
+type HistoryModifiedEvent struct {
+	Events            []*HistoryEventFieldList
+	ModificationInfos []*ModificationInfo
 }
 
 type HistoryReadRequest struct {
@@ -1855,9 +2227,7 @@ func (t *WriteResponse) SetHeader(h *ResponseHeader) {
 	t.ResponseHeader = h
 }
 
-type HistoryUpdateDetails struct {
-	NodeID *NodeID
-}
+type HistoryUpdateDetails struct{}
 
 type UpdateDataDetails struct {
 	NodeID               *NodeID
@@ -2599,7 +2969,7 @@ type SubscriptionDiagnosticsDataType struct {
 	DisabledMonitoredItemCount   uint32
 	MonitoringQueueOverflowCount uint32
 	NextSequenceNumber           uint32
-	EventQueueOverFlowCount      uint32
+	EventQueueOverflowCount      uint32
 }
 
 type ModelChangeStructureDataType struct {

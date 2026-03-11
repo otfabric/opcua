@@ -416,7 +416,7 @@ func (p *SubscriptionParameters) setDefaults() {
 // recreate_delete is called by the client when it is trying to
 // recreate an existing subscription. This function deletes the
 // existing subscription from the server.
-func (s *Subscription) recreate_delete(ctx context.Context) error {
+func (s *Subscription) recreate_delete(ctx context.Context) error { //nolint:unparam
 	req := &ua.DeleteSubscriptionsRequest{
 		SubscriptionIDs: []uint32{s.SubscriptionID},
 	}

@@ -35,7 +35,7 @@ func TestConcurrentReads(t *testing.T) {
 	errs := make(chan error, goroutines*iterations)
 
 	for g := 0; g < goroutines; g++ {
-		go func(g int) {
+		go func() {
 			defer wg.Done()
 			for i := 0; i < iterations; i++ {
 				name := nodeNames[i%len(nodeNames)]
@@ -55,7 +55,7 @@ func TestConcurrentReads(t *testing.T) {
 					return
 				}
 			}
-		}(g)
+		}()
 	}
 
 	wg.Wait()

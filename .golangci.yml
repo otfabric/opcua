@@ -11,3 +11,4 @@ linters:
   default: none
   enable:
     - govet
+    - unparam

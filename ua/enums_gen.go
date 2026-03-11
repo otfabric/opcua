@@ -57,6 +57,30 @@ const (
 	NamingRuleTypeConstraint NamingRuleType = 3
 )
 
+type RedundantServerMode uint32
+
+func RedundantServerModeFromString(s string) RedundantServerMode {
+	switch s {
+	case "PrimaryWithBackup":
+		return 0
+	case "PrimaryOnly":
+		return 1
+	case "BackupReady":
+		return 2
+	case "BackupNotReady":
+		return 3
+	default:
+		return 0
+	}
+}
+
+const (
+	RedundantServerModePrimaryWithBackup RedundantServerMode = 0
+	RedundantServerModePrimaryOnly       RedundantServerMode = 1
+	RedundantServerModeBackupReady       RedundantServerMode = 2
+	RedundantServerModeBackupNotReady    RedundantServerMode = 3
+)
+
 type OpenFileMode uint32
 
 func OpenFileModeFromString(s string) OpenFileMode {
@@ -101,20 +125,44 @@ func IdentityCriteriaTypeFromString(s string) IdentityCriteriaType {
 		return 7
 	case "X509Subject":
 		return 8
+	case "TrustedApplication":
+		return 9
 	default:
 		return 0
 	}
 }
 
 const (
-	IdentityCriteriaTypeUserName          IdentityCriteriaType = 1
-	IdentityCriteriaTypeThumbprint        IdentityCriteriaType = 2
-	IdentityCriteriaTypeRole              IdentityCriteriaType = 3
-	IdentityCriteriaTypeGroupID           IdentityCriteriaType = 4
-	IdentityCriteriaTypeAnonymous         IdentityCriteriaType = 5
-	IdentityCriteriaTypeAuthenticatedUser IdentityCriteriaType = 6
-	IdentityCriteriaTypeApplication       IdentityCriteriaType = 7
-	IdentityCriteriaTypeX509Subject       IdentityCriteriaType = 8
+	IdentityCriteriaTypeUserName           IdentityCriteriaType = 1
+	IdentityCriteriaTypeThumbprint         IdentityCriteriaType = 2
+	IdentityCriteriaTypeRole               IdentityCriteriaType = 3
+	IdentityCriteriaTypeGroupID            IdentityCriteriaType = 4
+	IdentityCriteriaTypeAnonymous          IdentityCriteriaType = 5
+	IdentityCriteriaTypeAuthenticatedUser  IdentityCriteriaType = 6
+	IdentityCriteriaTypeApplication        IdentityCriteriaType = 7
+	IdentityCriteriaTypeX509Subject        IdentityCriteriaType = 8
+	IdentityCriteriaTypeTrustedApplication IdentityCriteriaType = 9
+)
+
+type ConversionLimitEnum uint32
+
+func ConversionLimitEnumFromString(s string) ConversionLimitEnum {
+	switch s {
+	case "NoConversion":
+		return 0
+	case "Limited":
+		return 1
+	case "Unlimited":
+		return 2
+	default:
+		return 0
+	}
+}
+
+const (
+	ConversionLimitEnumNoConversion ConversionLimitEnum = 0
+	ConversionLimitEnumLimited      ConversionLimitEnum = 1
+	ConversionLimitEnumUnlimited    ConversionLimitEnum = 2
 )
 
 type AlarmMask uint16
@@ -207,6 +255,30 @@ const (
 	TrustListMasksAll                 TrustListMasks = 15
 )
 
+type ConfigurationUpdateType uint32
+
+func ConfigurationUpdateTypeFromString(s string) ConfigurationUpdateType {
+	switch s {
+	case "Insert":
+		return 1
+	case "Replace":
+		return 2
+	case "InsertOrReplace":
+		return 3
+	case "Delete":
+		return 4
+	default:
+		return 0
+	}
+}
+
+const (
+	ConfigurationUpdateTypeInsert          ConfigurationUpdateType = 1
+	ConfigurationUpdateTypeReplace         ConfigurationUpdateType = 2
+	ConfigurationUpdateTypeInsertOrReplace ConfigurationUpdateType = 3
+	ConfigurationUpdateTypeDelete          ConfigurationUpdateType = 4
+)
+
 type PubSubState uint32
 
 func PubSubStateFromString(s string) PubSubState {
@@ -250,6 +322,27 @@ func DataSetFieldFlagsFromString(s string) DataSetFieldFlags {
 const (
 	DataSetFieldFlagsNone          DataSetFieldFlags = 0
 	DataSetFieldFlagsPromotedField DataSetFieldFlags = 1
+)
+
+type ActionState uint32
+
+func ActionStateFromString(s string) ActionState {
+	switch s {
+	case "Idle":
+		return 0
+	case "Executing":
+		return 1
+	case "Done":
+		return 2
+	default:
+		return 0
+	}
+}
+
+const (
+	ActionStateIDle      ActionState = 0
+	ActionStateExecuting ActionState = 1
+	ActionStateDone      ActionState = 2
 )
 
 type DataSetFieldContentMask uint32
@@ -426,6 +519,8 @@ func JSONNetworkMessageContentMaskFromString(s string) JSONNetworkMessageContent
 		return 16
 	case "ReplyTo":
 		return 32
+	case "WriterGroupName":
+		return 64
 	default:
 		return 0
 	}
@@ -439,6 +534,7 @@ const (
 	JSONNetworkMessageContentMaskPublisherID          JSONNetworkMessageContentMask = 8
 	JSONNetworkMessageContentMaskDataSetClassID       JSONNetworkMessageContentMask = 16
 	JSONNetworkMessageContentMaskReplyTo              JSONNetworkMessageContentMask = 32
+	JSONNetworkMessageContentMaskWriterGroupName      JSONNetworkMessageContentMask = 64
 )
 
 type JSONDataSetMessageContentMask uint32
@@ -461,23 +557,35 @@ func JSONDataSetMessageContentMaskFromString(s string) JSONDataSetMessageContent
 		return 32
 	case "DataSetWriterName":
 		return 64
-	case "ReversibleFieldEncoding":
+	case "FieldEncoding1":
 		return 128
+	case "PublisherId":
+		return 256
+	case "WriterGroupName":
+		return 512
+	case "MinorVersion":
+		return 1024
+	case "FieldEncoding2":
+		return 2048
 	default:
 		return 0
 	}
 }
 
 const (
-	JSONDataSetMessageContentMaskNone                    JSONDataSetMessageContentMask = 0
-	JSONDataSetMessageContentMaskDataSetWriterID         JSONDataSetMessageContentMask = 1
-	JSONDataSetMessageContentMaskMetaDataVersion         JSONDataSetMessageContentMask = 2
-	JSONDataSetMessageContentMaskSequenceNumber          JSONDataSetMessageContentMask = 4
-	JSONDataSetMessageContentMaskTimestamp               JSONDataSetMessageContentMask = 8
-	JSONDataSetMessageContentMaskStatus                  JSONDataSetMessageContentMask = 16
-	JSONDataSetMessageContentMaskMessageType             JSONDataSetMessageContentMask = 32
-	JSONDataSetMessageContentMaskDataSetWriterName       JSONDataSetMessageContentMask = 64
-	JSONDataSetMessageContentMaskReversibleFieldEncoding JSONDataSetMessageContentMask = 128
+	JSONDataSetMessageContentMaskNone              JSONDataSetMessageContentMask = 0
+	JSONDataSetMessageContentMaskDataSetWriterID   JSONDataSetMessageContentMask = 1
+	JSONDataSetMessageContentMaskMetaDataVersion   JSONDataSetMessageContentMask = 2
+	JSONDataSetMessageContentMaskSequenceNumber    JSONDataSetMessageContentMask = 4
+	JSONDataSetMessageContentMaskTimestamp         JSONDataSetMessageContentMask = 8
+	JSONDataSetMessageContentMaskStatus            JSONDataSetMessageContentMask = 16
+	JSONDataSetMessageContentMaskMessageType       JSONDataSetMessageContentMask = 32
+	JSONDataSetMessageContentMaskDataSetWriterName JSONDataSetMessageContentMask = 64
+	JSONDataSetMessageContentMaskFieldEncoding1    JSONDataSetMessageContentMask = 128
+	JSONDataSetMessageContentMaskPublisherID       JSONDataSetMessageContentMask = 256
+	JSONDataSetMessageContentMaskWriterGroupName   JSONDataSetMessageContentMask = 512
+	JSONDataSetMessageContentMaskMinorVersion      JSONDataSetMessageContentMask = 1024
+	JSONDataSetMessageContentMaskFieldEncoding2    JSONDataSetMessageContentMask = 2048
 )
 
 type BrokerTransportQoS uint32
@@ -937,6 +1045,174 @@ const (
 	TsnListenerStatusReady         TsnListenerStatus = 1
 	TsnListenerStatusPartialFailed TsnListenerStatus = 2
 	TsnListenerStatusFailed        TsnListenerStatus = 3
+)
+
+type ChassisIDSubtype uint32
+
+func ChassisIDSubtypeFromString(s string) ChassisIDSubtype {
+	switch s {
+	case "ChassisComponent":
+		return 1
+	case "InterfaceAlias":
+		return 2
+	case "PortComponent":
+		return 3
+	case "MacAddress":
+		return 4
+	case "NetworkAddress":
+		return 5
+	case "InterfaceName":
+		return 6
+	case "Local":
+		return 7
+	default:
+		return 0
+	}
+}
+
+const (
+	ChassisIDSubtypeChassisComponent ChassisIDSubtype = 1
+	ChassisIDSubtypeInterfaceAlias   ChassisIDSubtype = 2
+	ChassisIDSubtypePortComponent    ChassisIDSubtype = 3
+	ChassisIDSubtypeMacAddress       ChassisIDSubtype = 4
+	ChassisIDSubtypeNetworkAddress   ChassisIDSubtype = 5
+	ChassisIDSubtypeInterfaceName    ChassisIDSubtype = 6
+	ChassisIDSubtypeLocal            ChassisIDSubtype = 7
+)
+
+type PortIDSubtype uint32
+
+func PortIDSubtypeFromString(s string) PortIDSubtype {
+	switch s {
+	case "InterfaceAlias":
+		return 1
+	case "PortComponent":
+		return 2
+	case "MacAddress":
+		return 3
+	case "NetworkAddress":
+		return 4
+	case "InterfaceName":
+		return 5
+	case "AgentCircuitId":
+		return 6
+	case "Local":
+		return 7
+	default:
+		return 0
+	}
+}
+
+const (
+	PortIDSubtypeInterfaceAlias PortIDSubtype = 1
+	PortIDSubtypePortComponent  PortIDSubtype = 2
+	PortIDSubtypeMacAddress     PortIDSubtype = 3
+	PortIDSubtypeNetworkAddress PortIDSubtype = 4
+	PortIDSubtypeInterfaceName  PortIDSubtype = 5
+	PortIDSubtypeAgentCircuitID PortIDSubtype = 6
+	PortIDSubtypeLocal          PortIDSubtype = 7
+)
+
+type ManAddrIfSubtype uint32
+
+func ManAddrIfSubtypeFromString(s string) ManAddrIfSubtype {
+	switch s {
+	case "None":
+		return 0
+	case "Unknown":
+		return 1
+	case "PortRef":
+		return 2
+	case "SystemPortNumber":
+		return 3
+	default:
+		return 0
+	}
+}
+
+const (
+	ManAddrIfSubtypeNone             ManAddrIfSubtype = 0
+	ManAddrIfSubtypeUnknown          ManAddrIfSubtype = 1
+	ManAddrIfSubtypePortRef          ManAddrIfSubtype = 2
+	ManAddrIfSubtypeSystemPortNumber ManAddrIfSubtype = 3
+)
+
+type LldpSystemCapabilitiesMap uint32
+
+func LldpSystemCapabilitiesMapFromString(s string) LldpSystemCapabilitiesMap {
+	switch s {
+	case "None":
+		return 0
+	case "Other":
+		return 1
+	case "Repeater":
+		return 2
+	case "Bridge":
+		return 4
+	case "WlanAccessPoint":
+		return 8
+	case "Router":
+		return 16
+	case "Telephone":
+		return 32
+	case "DocsisCableDevice":
+		return 64
+	case "StationOnly":
+		return 128
+	case "CvlanComponent":
+		return 256
+	case "SvlanComponent":
+		return 512
+	case "TwoPortMacRelay":
+		return 1024
+	default:
+		return 0
+	}
+}
+
+const (
+	LldpSystemCapabilitiesMapNone              LldpSystemCapabilitiesMap = 0
+	LldpSystemCapabilitiesMapOther             LldpSystemCapabilitiesMap = 1
+	LldpSystemCapabilitiesMapRepeater          LldpSystemCapabilitiesMap = 2
+	LldpSystemCapabilitiesMapBridge            LldpSystemCapabilitiesMap = 4
+	LldpSystemCapabilitiesMapWlanAccessPoint   LldpSystemCapabilitiesMap = 8
+	LldpSystemCapabilitiesMapRouter            LldpSystemCapabilitiesMap = 16
+	LldpSystemCapabilitiesMapTelephone         LldpSystemCapabilitiesMap = 32
+	LldpSystemCapabilitiesMapDocsisCableDevice LldpSystemCapabilitiesMap = 64
+	LldpSystemCapabilitiesMapStationOnly       LldpSystemCapabilitiesMap = 128
+	LldpSystemCapabilitiesMapCvlanComponent    LldpSystemCapabilitiesMap = 256
+	LldpSystemCapabilitiesMapSvlanComponent    LldpSystemCapabilitiesMap = 512
+	LldpSystemCapabilitiesMapTwoPortMacRelay   LldpSystemCapabilitiesMap = 1024
+)
+
+type LogRecordMask uint32
+
+func LogRecordMaskFromString(s string) LogRecordMask {
+	switch s {
+	case "None":
+		return 0
+	case "EventType":
+		return 1
+	case "SourceNode":
+		return 2
+	case "SourceName":
+		return 4
+	case "TraceContext":
+		return 8
+	case "AdditionalData":
+		return 16
+	default:
+		return 0
+	}
+}
+
+const (
+	LogRecordMaskNone           LogRecordMask = 0
+	LogRecordMaskEventType      LogRecordMask = 1
+	LogRecordMaskSourceNode     LogRecordMask = 2
+	LogRecordMaskSourceName     LogRecordMask = 4
+	LogRecordMaskTraceContext   LogRecordMask = 8
+	LogRecordMaskAdditionalData LogRecordMask = 16
 )
 
 type IDType uint32
@@ -1693,6 +1969,24 @@ const (
 	TimestampsToReturnBoth    TimestampsToReturn = 2
 	TimestampsToReturnNeither TimestampsToReturn = 3
 	TimestampsToReturnInvalid TimestampsToReturn = 4
+)
+
+type SortOrderType uint32
+
+func SortOrderTypeFromString(s string) SortOrderType {
+	switch s {
+	case "Ascending":
+		return 0
+	case "Descending":
+		return 1
+	default:
+		return 0
+	}
+}
+
+const (
+	SortOrderTypeAscending  SortOrderType = 0
+	SortOrderTypeDescending SortOrderType = 1
 )
 
 type HistoryUpdateType uint32

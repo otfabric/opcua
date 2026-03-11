@@ -182,11 +182,11 @@ type SecureChannel struct {
 }
 
 func NewSecureChannel(endpoint string, c *uacp.Conn, cfg *Config, errCh chan<- error) (*SecureChannel, error) {
-	return newSecureChannel(endpoint, c, cfg, client, errCh, 0, 0, 0)
+	return newSecureChannel(endpoint, c, cfg, client, errCh)
 }
 
 func NewServerSecureChannel(endpoint string, c *uacp.Conn, cfg *Config, errCh chan<- error, secureChannelID, sequenceNumber, securityTokenID uint32) (*SecureChannel, error) {
-	s, err := newSecureChannel(endpoint, c, cfg, server, errCh, secureChannelID, sequenceNumber, securityTokenID)
+	s, err := newSecureChannel(endpoint, c, cfg, server, errCh)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func NewServerSecureChannel(endpoint string, c *uacp.Conn, cfg *Config, errCh ch
 	return s, nil
 }
 
-func newSecureChannel(endpoint string, c *uacp.Conn, cfg *Config, kind channelKind, errCh chan<- error, secureChannelID, sequenceNumber, securityTokenID uint32) (*SecureChannel, error) {
+func newSecureChannel(endpoint string, c *uacp.Conn, cfg *Config, kind channelKind, errCh chan<- error) (*SecureChannel, error) {
 	if c == nil {
 		return nil, errors.ErrNotConnected
 	}
@@ -222,14 +222,11 @@ func newSecureChannel(endpoint string, c *uacp.Conn, cfg *Config, kind channelKi
 	}
 
 	s := &SecureChannel{
-		endpointURL: endpoint,
-		c:           c,
-		cfg:         cfg,
-		requestID:   cfg.RequestIDSeed,
-		kind:        kind,
-		// secureChannelID: secureChannelID,
-		// sequenceNumber:  sequenceNumber,
-		// securityTokenID: securityTokenID,
+		endpointURL:  endpoint,
+		c:            c,
+		cfg:          cfg,
+		requestID:    cfg.RequestIDSeed,
+		kind:         kind,
 		reqLocker:    newConditionLocker(),
 		openDone:     make(chan struct{}, 1),
 		errch:        errCh,
@@ -245,6 +242,11 @@ func newSecureChannel(endpoint string, c *uacp.Conn, cfg *Config, kind channelKi
 
 func (s *SecureChannel) RemoteAddr() net.Addr {
 	return s.c.TCPConn.RemoteAddr()
+}
+
+// SecurityMode returns the message security mode configured for this channel.
+func (s *SecureChannel) SecurityMode() ua.MessageSecurityMode {
+	return s.cfg.SecurityMode
 }
 
 func (s *SecureChannel) getActiveChannelInstance() (*channelInstance, error) {
@@ -397,11 +399,7 @@ func (s *SecureChannel) Receive(ctx context.Context) *MessageBody {
 
 			s.chunksMu.Unlock()
 
-			b, err := mergeChunks(all)
-			if err != nil {
-				msg.Err = err
-				return msg
-			}
+			b := mergeChunks(all)
 
 			if uint32(len(b)) > s.c.MaxMessageSize() {
 				msg.Err = fmt.Errorf("%w: %d > %d", errors.ErrMessageTooLarge, uint32(len(b)), s.c.MaxMessageSize())
@@ -1119,6 +1117,12 @@ func (s *SecureChannel) SendMsgWithContext(ctx context.Context, instance *channe
 }
 
 func (s *SecureChannel) sendResponseWithContext(ctx context.Context, instance *channelInstance, reqID uint32, resp ua.Response) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	typeID := ua.ServiceTypeID(resp)
 	if typeID == 0 {
 		return fmt.Errorf("%w: %T", errors.ErrUnknownService, resp)
@@ -1147,6 +1151,12 @@ func (s *SecureChannel) sendResponseWithContext(ctx context.Context, instance *c
 	b, err = instance.signAndEncrypt(m, b)
 	if err != nil {
 		return err
+	}
+
+	// Set a write deadline from the context if one is available.
+	if deadline, ok := ctx.Deadline(); ok {
+		s.c.SetWriteDeadline(deadline)
+		defer s.c.SetWriteDeadline(time.Time{})
 	}
 
 	// send the message
@@ -1222,12 +1232,12 @@ func (s *SecureChannel) timeNow() time.Time {
 	return time.Now()
 }
 
-func mergeChunks(chunks []*MessageChunk) ([]byte, error) {
+func mergeChunks(chunks []*MessageChunk) []byte {
 	if len(chunks) == 0 {
-		return nil, nil
+		return nil
 	}
 	if len(chunks) == 1 {
-		return chunks[0].Data, nil
+		return chunks[0].Data
 	}
 
 	var b []byte
@@ -1239,5 +1249,5 @@ func mergeChunks(chunks []*MessageChunk) ([]byte, error) {
 		seqnr = c.SequenceHeader.SequenceNumber
 		b = append(b, c.Data...)
 	}
-	return b, nil
+	return b
 }

@@ -19,6 +19,13 @@ type session struct {
 	serverNonce       []byte
 	remoteCertificate []byte
 
+	// identityToken is the user identity provided during ActivateSession.
+	identityToken ua.IdentityToken
+
+	// roles is the set of well-known role NodeIDs assigned to this session
+	// based on the identity token. Set during ActivateSession.
+	roles []*ua.NodeID
+
 	PublishRequests chan PubReq
 }
 

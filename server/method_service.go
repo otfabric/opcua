@@ -42,6 +42,12 @@ func (s *MethodService) Call(ctx context.Context, sc *uasc.SecureChannel, r ua.R
 				results[i] = &ua.CallMethodResult{StatusCode: sc}
 				continue
 			}
+			if node := s.srv.Node(m.MethodID); node != nil {
+				if st := checkAccessRestrictions(sc, node); st != ua.StatusOK {
+					results[i] = &ua.CallMethodResult{StatusCode: st}
+					continue
+				}
+			}
 		}
 		results[i] = s.callMethod(ctx, m)
 	}

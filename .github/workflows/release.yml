@@ -1,0 +1,139 @@
+name: Release OPC UA Library
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - none
+        default: patch
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Determine version
+        id: version
+        run: |
+          # Find the latest semver tag
+          latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -1)
+          if [ -z "$latest" ]; then
+            latest="v0.0.0"
+          fi
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
+          # Strip leading 'v'
+          ver="${latest#v}"
+          IFS='.' read -r major minor patch <<< "$ver"
+
+          case "${{ inputs.bump }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+            none)
+              ;;
+          esac
+
+          tag="v${major}.${minor}.${patch}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "### Version: $tag (bump: ${{ inputs.bump }}, previous: $latest)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check tag existence
+        id: check
+        run: |
+          if git rev-parse "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail if tag exists and bump is not none
+        if: steps.check.outputs.exists == 'true' && inputs.bump != 'none'
+        run: |
+          echo "::error::Tag ${{ steps.version.outputs.tag }} already exists. Use bump=none to update it, or choose a different bump level."
+          exit 1
+
+      - name: Move existing tag
+        if: steps.check.outputs.exists == 'true' && inputs.bump == 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "${{ steps.version.outputs.tag }}" HEAD
+          git push origin "refs/tags/${{ steps.version.outputs.tag }}" --force
+
+      - name: Create new tag
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}" HEAD
+          git push origin "refs/tags/${{ steps.version.outputs.tag }}"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          prev="${{ steps.version.outputs.latest }}"
+
+          # Use RELEASE.md if it exists, otherwise generate from commits
+          if [ -f RELEASE.md ]; then
+            {
+              echo "body<<RELEASE_EOF"
+              cat RELEASE.md
+              echo ""
+              echo "RELEASE_EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "body<<RELEASE_EOF"
+              echo "## Changes since ${prev}"
+              echo ""
+              git log "${prev}..HEAD" --pretty=format:"- %s (%h)" 2>/dev/null || echo "- Initial release"
+              echo ""
+              echo "RELEASE_EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete existing release
+        if: steps.check.outputs.exists == 'true' && inputs.bump == 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete "${{ steps.version.outputs.tag }}" --yes 2>/dev/null || true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          gh release create "$tag" \
+            --title "$tag" \
+            --notes "${{ steps.notes.outputs.body }}" \
+            --target main

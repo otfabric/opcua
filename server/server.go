@@ -84,6 +84,7 @@ type serverConfig struct {
 	cap ServerCapabilities
 
 	accessController AccessController
+	roleMapper       RoleMapper
 	metrics          ServerMetrics
 
 	logger logger.Logger
@@ -91,7 +92,18 @@ type serverConfig struct {
 
 var capabilities = ServerCapabilities{
 	OperationalLimits: OperationalLimits{
-		MaxNodesPerRead: 32,
+		MaxNodesPerRead:                          32,
+		MaxNodesPerWrite:                         32,
+		MaxNodesPerBrowse:                        32,
+		MaxNodesPerMethodCall:                    32,
+		MaxNodesPerRegisterNodes:                 32,
+		MaxNodesPerTranslateBrowsePathsToNodeIDs: 32,
+		MaxNodesPerNodeManagement:                32,
+		MaxMonitoredItemsPerCall:                 32,
+		MaxNodesPerHistoryReadData:               32,
+		MaxNodesPerHistoryReadEvents:             32,
+		MaxNodesPerHistoryUpdateData:             32,
+		MaxNodesPerHistoryUpdateEvents:           32,
 	},
 }
 
@@ -100,7 +112,18 @@ type ServerCapabilities struct {
 }
 
 type OperationalLimits struct {
-	MaxNodesPerRead uint32
+	MaxNodesPerRead                          uint32
+	MaxNodesPerWrite                         uint32
+	MaxNodesPerBrowse                        uint32
+	MaxNodesPerMethodCall                    uint32
+	MaxNodesPerRegisterNodes                 uint32
+	MaxNodesPerTranslateBrowsePathsToNodeIDs uint32
+	MaxNodesPerNodeManagement                uint32
+	MaxMonitoredItemsPerCall                 uint32
+	MaxNodesPerHistoryReadData               uint32
+	MaxNodesPerHistoryReadEvents             uint32
+	MaxNodesPerHistoryUpdateData             uint32
+	MaxNodesPerHistoryUpdateEvents           uint32
 }
 
 type authMode struct {

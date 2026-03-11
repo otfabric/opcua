@@ -40,16 +40,39 @@ func NamespacesNode(s *Server) *Node {
 }
 
 func ServerCapabilitiesNodes(s *Server) []*Node {
+	type limitNode struct {
+		nodeID     uint32
+		browseName string
+		valueFunc  func() uint32
+	}
+	limits := []limitNode{
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead, "MaxNodesPerRead", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerRead }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerWrite, "MaxNodesPerWrite", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerWrite }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerBrowse, "MaxNodesPerBrowse", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerBrowse }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerMethodCall, "MaxNodesPerMethodCall", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerMethodCall }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerRegisterNodes, "MaxNodesPerRegisterNodes", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerRegisterNodes }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerTranslateBrowsePathsToNodeIDs, "MaxNodesPerTranslateBrowsePathsToNodeIds", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerTranslateBrowsePathsToNodeIDs }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerNodeManagement, "MaxNodesPerNodeManagement", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerNodeManagement }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxMonitoredItemsPerCall, "MaxMonitoredItemsPerCall", func() uint32 { return s.cfg.cap.OperationalLimits.MaxMonitoredItemsPerCall }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadData, "MaxNodesPerHistoryReadData", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerHistoryReadData }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadEvents, "MaxNodesPerHistoryReadEvents", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerHistoryReadEvents }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateData, "MaxNodesPerHistoryUpdateData", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerHistoryUpdateData }},
+		{id.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateEvents, "MaxNodesPerHistoryUpdateEvents", func() uint32 { return s.cfg.cap.OperationalLimits.MaxNodesPerHistoryUpdateEvents }},
+	}
+
 	var nodes []*Node
-	nodes = append(nodes, NewNode(
-		ua.NewNumericNodeID(0, id.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead),
-		map[ua.AttributeID]*ua.DataValue{
-			ua.AttributeIDBrowseName: DataValueFromValue(attrs.BrowseName("MaxNodesPerRead")),
-			ua.AttributeIDNodeClass:  DataValueFromValue(uint32(ua.NodeClassVariable)),
-		},
-		nil,
-		func() *ua.DataValue { return DataValueFromValue(s.cfg.cap.OperationalLimits.MaxNodesPerRead) },
-	))
+	for _, l := range limits {
+		l := l
+		nodes = append(nodes, NewNode(
+			ua.NewNumericNodeID(0, l.nodeID),
+			map[ua.AttributeID]*ua.DataValue{
+				ua.AttributeIDBrowseName: DataValueFromValue(attrs.BrowseName(l.browseName)),
+				ua.AttributeIDNodeClass:  DataValueFromValue(uint32(ua.NodeClassVariable)),
+			},
+			nil,
+			func() *ua.DataValue { return DataValueFromValue(l.valueFunc()) },
+		))
+	}
 	return nodes
 }
 

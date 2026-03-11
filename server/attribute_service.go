@@ -49,6 +49,18 @@ func (s *AttributeService) Read(ctx context.Context, sc *uasc.SecureChannel, r u
 			}
 			continue
 		}
+
+		if node := ns.Node(n.NodeID); node != nil {
+			if st := checkAccessRestrictions(sc, node); st != ua.StatusOK {
+				results[i] = &ua.DataValue{
+					EncodingMask:    ua.DataValueServerTimestamp | ua.DataValueStatusCode,
+					ServerTimestamp: time.Now(),
+					Status:          st,
+				}
+				continue
+			}
+		}
+
 		results[i] = ns.Attribute(n.NodeID, n.AttributeID)
 
 	}
@@ -112,6 +124,13 @@ func (s *AttributeService) Write(ctx context.Context, sc *uasc.SecureChannel, r 
 		if err != nil {
 			status[i] = ua.StatusBadNodeNotInView
 			continue
+		}
+
+		if node := ns.Node(n.NodeID); node != nil {
+			if st := checkAccessRestrictions(sc, node); st != ua.StatusOK {
+				status[i] = st
+				continue
+			}
 		}
 
 		status[i] = ns.SetAttribute(n.NodeID, n.AttributeID, n.Value)

@@ -75,6 +75,8 @@ var (
 	StatusBadLicenseExpired                                               StatusCode = 0x810E0000
 	StatusBadLicenseLimitsExceeded                                        StatusCode = 0x810F0000
 	StatusBadLicenseNotAvailable                                          StatusCode = 0x81100000
+	StatusBadServerTooBusy                                                StatusCode = 0x80EE0000
+	StatusGoodPasswordChangeRequired                                      StatusCode = 0x00EF0000
 	StatusGoodSubscriptionTransferred                                     StatusCode = 0x002D0000
 	StatusGoodCompletesAsynchronously                                     StatusCode = 0x002E0000
 	StatusGoodOverload                                                    StatusCode = 0x002F0000
@@ -86,6 +88,7 @@ var (
 	StatusBadAttributeIDInvalid                                           StatusCode = 0x80350000
 	StatusBadIndexRangeInvalid                                            StatusCode = 0x80360000
 	StatusBadIndexRangeNoData                                             StatusCode = 0x80370000
+	StatusBadIndexRangeDataMismatch                                       StatusCode = 0x80EA0000
 	StatusBadDataEncodingInvalid                                          StatusCode = 0x80380000
 	StatusBadDataEncodingUnsupported                                      StatusCode = 0x80390000
 	StatusBadNotReadable                                                  StatusCode = 0x803A0000
@@ -115,10 +118,12 @@ var (
 	StatusBadBrowseDirectionInvalid                                       StatusCode = 0x804D0000
 	StatusBadNodeNotInView                                                StatusCode = 0x804E0000
 	StatusBadNumericOverflow                                              StatusCode = 0x81120000
+	StatusBadLocaleNotSupported                                           StatusCode = 0x80ED0000
+	StatusBadNoValue                                                      StatusCode = 0x80F00000
 	StatusBadServerURIInvalid                                             StatusCode = 0x804F0000
 	StatusBadServerNameMissing                                            StatusCode = 0x80500000
 	StatusBadDiscoveryURLMissing                                          StatusCode = 0x80510000
-	StatusBadSempahoreFileMissing                                         StatusCode = 0x80520000
+	StatusBadSemaphoreFileMissing                                         StatusCode = 0x80520000
 	StatusBadRequestTypeInvalid                                           StatusCode = 0x80530000
 	StatusBadSecurityModeRejected                                         StatusCode = 0x80540000
 	StatusBadSecurityPolicyRejected                                       StatusCode = 0x80550000
@@ -202,6 +207,7 @@ var (
 	StatusUncertainEngineeringUnitsExceeded                               StatusCode = 0x40940000
 	StatusUncertainSubNormal                                              StatusCode = 0x40950000
 	StatusGoodLocalOverride                                               StatusCode = 0x00960000
+	StatusGoodSubNormal                                                   StatusCode = 0x00EB0000
 	StatusBadRefreshInProgress                                            StatusCode = 0x80970000
 	StatusBadConditionAlreadyDisabled                                     StatusCode = 0x80980000
 	StatusBadConditionAlreadyEnabled                                      StatusCode = 0x80CC0000
@@ -236,9 +242,11 @@ var (
 	StatusBadRequestNotAllowed                                            StatusCode = 0x80E40000
 	StatusBadRequestNotComplete                                           StatusCode = 0x81130000
 	StatusBadTransactionPending                                           StatusCode = 0x80E80000
+	StatusBadTransactionFailed                                            StatusCode = 0x80F10000
 	StatusBadTicketRequired                                               StatusCode = 0x811F0000
 	StatusBadTicketInvalid                                                StatusCode = 0x81200000
 	StatusBadLocked                                                       StatusCode = 0x80E90000
+	StatusBadRequiresLock                                                 StatusCode = 0x80EC0000
 	StatusGoodEdited                                                      StatusCode = 0x00DC0000
 	StatusGoodPostActionFailed                                            StatusCode = 0x00DD0000
 	StatusUncertainDominantValueChanged                                   StatusCode = 0x40DE0000
@@ -308,7 +316,7 @@ var StatusCodes = map[StatusCode]StatusCodeDesc{
 	StatusBadDecodingError:                                         {Name: "StatusBadDecodingError", Text: "Decoding halted because of invalid data in the stream."},
 	StatusBadEncodingLimitsExceeded:                                {Name: "StatusBadEncodingLimitsExceeded", Text: "The message encoding/decoding limits imposed by the stack have been exceeded."},
 	StatusBadRequestTooLarge:                                       {Name: "StatusBadRequestTooLarge", Text: "The request message size exceeds limits set by the server."},
-	StatusBadResponseTooLarge:                                      {Name: "StatusBadResponseTooLarge", Text: "The response message size exceeds limits set by the client."},
+	StatusBadResponseTooLarge:                                      {Name: "StatusBadResponseTooLarge", Text: "The response message size exceeds limits set by the client or server."},
 	StatusBadUnknownResponse:                                       {Name: "StatusBadUnknownResponse", Text: "An unrecognized response was received from the server."},
 	StatusBadTimeout:                                               {Name: "StatusBadTimeout", Text: "The operation timed out."},
 	StatusBadServiceUnsupported:                                    {Name: "StatusBadServiceUnsupported", Text: "The server does not support the requested service."},
@@ -351,17 +359,20 @@ var StatusCodes = map[StatusCode]StatusCodeDesc{
 	StatusBadLicenseExpired:                                        {Name: "StatusBadLicenseExpired", Text: "The server requires a license to operate in general or to perform a service or operation, but existing license is expired."},
 	StatusBadLicenseLimitsExceeded:                                 {Name: "StatusBadLicenseLimitsExceeded", Text: "The server has limits on number of allowed operations / objects, based on installed licenses, and these limits where exceeded."},
 	StatusBadLicenseNotAvailable:                                   {Name: "StatusBadLicenseNotAvailable", Text: "The server does not have a license which is required to operate in general or to perform a service or operation."},
+	StatusBadServerTooBusy:                                         {Name: "StatusBadServerTooBusy", Text: "The Server does not have the resources to process the request at this time."},
+	StatusGoodPasswordChangeRequired:                               {Name: "StatusGoodPasswordChangeRequired", Text: "The log-on for the user succeeded but the user is required to change the password."},
 	StatusGoodSubscriptionTransferred:                              {Name: "StatusGoodSubscriptionTransferred", Text: "The subscription was transferred to another session."},
 	StatusGoodCompletesAsynchronously:                              {Name: "StatusGoodCompletesAsynchronously", Text: "The processing will complete asynchronously."},
 	StatusGoodOverload:                                             {Name: "StatusGoodOverload", Text: "Sampling has slowed down due to resource limitations."},
 	StatusGoodClamped:                                              {Name: "StatusGoodClamped", Text: "The value written was accepted but was clamped."},
 	StatusBadNoCommunication:                                       {Name: "StatusBadNoCommunication", Text: "Communication with the data source is defined, but not established, and there is no last known value available."},
 	StatusBadWaitingForInitialData:                                 {Name: "StatusBadWaitingForInitialData", Text: "Waiting for the server to obtain values from the underlying data source."},
-	StatusBadNodeIDInvalid:                                         {Name: "StatusBadNodeIDInvalid", Text: "The syntax of the node id is not valid."},
+	StatusBadNodeIDInvalid:                                         {Name: "StatusBadNodeIDInvalid", Text: "The syntax the node id is not valid or refers to a node that is not valid for the operation."},
 	StatusBadNodeIDUnknown:                                         {Name: "StatusBadNodeIDUnknown", Text: "The node id refers to a node that does not exist in the server address space."},
 	StatusBadAttributeIDInvalid:                                    {Name: "StatusBadAttributeIDInvalid", Text: "The attribute is not supported for the specified Node."},
 	StatusBadIndexRangeInvalid:                                     {Name: "StatusBadIndexRangeInvalid", Text: "The syntax of the index range parameter is invalid."},
 	StatusBadIndexRangeNoData:                                      {Name: "StatusBadIndexRangeNoData", Text: "No data exists within the range of indexes specified."},
+	StatusBadIndexRangeDataMismatch:                                {Name: "StatusBadIndexRangeDataMismatch", Text: "The written data does not match the IndexRange specified."},
 	StatusBadDataEncodingInvalid:                                   {Name: "StatusBadDataEncodingInvalid", Text: "The data encoding is invalid."},
 	StatusBadDataEncodingUnsupported:                               {Name: "StatusBadDataEncodingUnsupported", Text: "The server does not support the requested data encoding for the node."},
 	StatusBadNotReadable:                                           {Name: "StatusBadNotReadable", Text: "The access level does not allow reading or subscribing to the Node."},
@@ -391,10 +402,12 @@ var StatusCodes = map[StatusCode]StatusCodeDesc{
 	StatusBadBrowseDirectionInvalid:                                {Name: "StatusBadBrowseDirectionInvalid", Text: "The browse direction is not valid."},
 	StatusBadNodeNotInView:                                         {Name: "StatusBadNodeNotInView", Text: "The node is not part of the view."},
 	StatusBadNumericOverflow:                                       {Name: "StatusBadNumericOverflow", Text: "The number was not accepted because of a numeric overflow."},
+	StatusBadLocaleNotSupported:                                    {Name: "StatusBadLocaleNotSupported", Text: "The locale in the requested write operation is not supported."},
+	StatusBadNoValue:                                               {Name: "StatusBadNoValue", Text: "The variable has no default value and no initial value."},
 	StatusBadServerURIInvalid:                                      {Name: "StatusBadServerURIInvalid", Text: "The ServerUri is not a valid URI."},
 	StatusBadServerNameMissing:                                     {Name: "StatusBadServerNameMissing", Text: "No ServerName was specified."},
 	StatusBadDiscoveryURLMissing:                                   {Name: "StatusBadDiscoveryURLMissing", Text: "No DiscoveryUrl was specified."},
-	StatusBadSempahoreFileMissing:                                  {Name: "StatusBadSempahoreFileMissing", Text: "The semaphore file specified by the client is not valid."},
+	StatusBadSemaphoreFileMissing:                                  {Name: "StatusBadSemaphoreFileMissing", Text: "The semaphore file specified by the client is not valid."},
 	StatusBadRequestTypeInvalid:                                    {Name: "StatusBadRequestTypeInvalid", Text: "The security token request type is not valid."},
 	StatusBadSecurityModeRejected:                                  {Name: "StatusBadSecurityModeRejected", Text: "The security mode does not meet the requirements set by the server."},
 	StatusBadSecurityPolicyRejected:                                {Name: "StatusBadSecurityPolicyRejected", Text: "The security policy does not meet the requirements set by the server."},
@@ -476,8 +489,9 @@ var StatusCodes = map[StatusCode]StatusCodeDesc{
 	StatusUncertainInitialValue:                                    {Name: "StatusUncertainInitialValue", Text: "The value is an initial value for a variable that normally receives its value from another variable."},
 	StatusUncertainSensorNotAccurate:                               {Name: "StatusUncertainSensorNotAccurate", Text: "The value is at one of the sensor limits."},
 	StatusUncertainEngineeringUnitsExceeded:                        {Name: "StatusUncertainEngineeringUnitsExceeded", Text: "The value is outside of the range of values defined for this parameter."},
-	StatusUncertainSubNormal:                                       {Name: "StatusUncertainSubNormal", Text: "The value is derived from multiple sources and has less than the required number of Good sources."},
+	StatusUncertainSubNormal:                                       {Name: "StatusUncertainSubNormal", Text: "The data value is derived from multiple sources and has less than the required number of Good sources."},
 	StatusGoodLocalOverride:                                        {Name: "StatusGoodLocalOverride", Text: "The value has been overridden."},
+	StatusGoodSubNormal:                                            {Name: "StatusGoodSubNormal", Text: "The value is derived from multiple sources and has the required number of Good sources, but less than the full number of Good sources."},
 	StatusBadRefreshInProgress:                                     {Name: "StatusBadRefreshInProgress", Text: "This Condition refresh failed, a Condition refresh operation is already in progress."},
 	StatusBadConditionAlreadyDisabled:                              {Name: "StatusBadConditionAlreadyDisabled", Text: "This condition has already been disabled."},
 	StatusBadConditionAlreadyEnabled:                               {Name: "StatusBadConditionAlreadyEnabled", Text: "This condition has already been enabled."},
@@ -498,10 +512,10 @@ var StatusCodes = map[StatusCode]StatusCodeDesc{
 	StatusBadDataUnavailable:                                       {Name: "StatusBadDataUnavailable", Text: "Expected data is unavailable for the requested time range due to an un-mounted volume, an off-line archive or tape, or similar reason for temporary unavailability."},
 	StatusBadEntryExists:                                           {Name: "StatusBadEntryExists", Text: "The data or event was not successfully inserted because a matching entry exists."},
 	StatusBadNoEntryExists:                                         {Name: "StatusBadNoEntryExists", Text: "The data or event was not successfully updated because no matching entry exists."},
-	StatusBadTimestampNotSupported:                                 {Name: "StatusBadTimestampNotSupported", Text: "The client requested history using a timestamp format the server does not support (i.e requested ServerTimestamp when server only supports SourceTimestamp)."},
+	StatusBadTimestampNotSupported:                                 {Name: "StatusBadTimestampNotSupported", Text: "The Client requested history using a TimestampsToReturn the Server does not support."},
 	StatusGoodEntryInserted:                                        {Name: "StatusGoodEntryInserted", Text: "The data or event was successfully inserted into the historical database."},
 	StatusGoodEntryReplaced:                                        {Name: "StatusGoodEntryReplaced", Text: "The data or event field was successfully replaced in the historical database."},
-	StatusUncertainDataSubNormal:                                   {Name: "StatusUncertainDataSubNormal", Text: "The value is derived from multiple values and has less than the required number of Good values."},
+	StatusUncertainDataSubNormal:                                   {Name: "StatusUncertainDataSubNormal", Text: "The aggregate value is derived from multiple values and has less than the required number of Good values."},
 	StatusGoodNoData:                                               {Name: "StatusGoodNoData", Text: "No data exists for the requested time range or event filter."},
 	StatusGoodMoreData:                                             {Name: "StatusGoodMoreData", Text: "More data is available in the time range beyond the number of values requested."},
 	StatusBadAggregateListMismatch:                                 {Name: "StatusBadAggregateListMismatch", Text: "The requested number of Aggregates does not match the requested number of NodeIds."},
@@ -512,9 +526,11 @@ var StatusCodes = map[StatusCode]StatusCodeDesc{
 	StatusBadRequestNotAllowed:                                     {Name: "StatusBadRequestNotAllowed", Text: "The request was rejected by the server because it did not meet the criteria set by the server."},
 	StatusBadRequestNotComplete:                                    {Name: "StatusBadRequestNotComplete", Text: "The request has not been processed by the server yet."},
 	StatusBadTransactionPending:                                    {Name: "StatusBadTransactionPending", Text: "The operation is not allowed because a transaction is in progress."},
+	StatusBadTransactionFailed:                                     {Name: "StatusBadTransactionFailed", Text: "The operation failed and all changes which were part of the transaction are rolled back."},
 	StatusBadTicketRequired:                                        {Name: "StatusBadTicketRequired", Text: "The device identity needs a ticket before it can be accepted."},
 	StatusBadTicketInvalid:                                         {Name: "StatusBadTicketInvalid", Text: "The device identity needs a ticket before it can be accepted."},
 	StatusBadLocked:                                                {Name: "StatusBadLocked", Text: "The requested operation is not allowed, because the Node is locked by a different application."},
+	StatusBadRequiresLock:                                          {Name: "StatusBadRequiresLock", Text: "The requested operation is not allowed, because the Node is not locked by the application."},
 	StatusGoodEdited:                                               {Name: "StatusGoodEdited", Text: "The value does not come from the real source and has been edited by the server."},
 	StatusGoodPostActionFailed:                                     {Name: "StatusGoodPostActionFailed", Text: "There was an error in execution of these post-actions."},
 	StatusUncertainDominantValueChanged:                            {Name: "StatusUncertainDominantValueChanged", Text: "The related EngineeringUnit has been changed but the Variable Value is still provided based on the previous unit."},

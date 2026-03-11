@@ -23,7 +23,7 @@ func (srv *Server) ImportNodeSet(nodes *schema.UANodeSet) error {
 	return nil
 }
 
-func (srv *Server) namespacesImportNodeSet(nodes *schema.UANodeSet) error {
+func (srv *Server) namespacesImportNodeSet(nodes *schema.UANodeSet) error { //nolint:unparam
 	if nodes.NamespaceUris == nil {
 		return nil
 	}
@@ -102,6 +102,7 @@ func (srv *Server) nodesImportNodeSet(nodes *schema.UANodeSet) error {
 		var refs References = make([]*ua.ReferenceDescription, 0)
 
 		n := NewNode(nid, attrs, refs, nil)
+		n.rolePermissions = resolveRolePermissions(dt.RolePermissions, nid)
 
 		ns, err := srv.Namespace(int(nid.Namespace()))
 		if err != nil {
@@ -133,6 +134,7 @@ func (srv *Server) nodesImportNodeSet(nodes *schema.UANodeSet) error {
 		var refs References = make([]*ua.ReferenceDescription, 0)
 
 		n := NewNode(nid, attrs, refs, nil)
+		n.rolePermissions = resolveRolePermissions(ot.RolePermissions, nid)
 		ns, err := srv.Namespace(int(nid.Namespace()))
 		if err != nil {
 			// This namespace doesn't exist.
@@ -162,6 +164,7 @@ func (srv *Server) nodesImportNodeSet(nodes *schema.UANodeSet) error {
 		var refs References = make([]*ua.ReferenceDescription, 0)
 
 		n := NewNode(nid, attrs, refs, nil)
+		n.rolePermissions = resolveRolePermissions(ot.RolePermissions, nid)
 		ns, err := srv.Namespace(int(nid.Namespace()))
 		if err != nil {
 			// This namespace doesn't exist.
@@ -191,6 +194,7 @@ func (srv *Server) nodesImportNodeSet(nodes *schema.UANodeSet) error {
 		var refs References = make([]*ua.ReferenceDescription, 0)
 
 		n := NewNode(nid, attrs, refs, nil)
+		n.rolePermissions = resolveRolePermissions(ot.RolePermissions, nid)
 		ns, err := srv.Namespace(int(nid.Namespace()))
 		if err != nil {
 			// This namespace doesn't exist.
@@ -220,6 +224,7 @@ func (srv *Server) nodesImportNodeSet(nodes *schema.UANodeSet) error {
 		var refs References = make([]*ua.ReferenceDescription, 0)
 
 		n := NewNode(nid, attrs, refs, nil)
+		n.rolePermissions = resolveRolePermissions(ot.RolePermissions, nid)
 		ns, err := srv.Namespace(int(nid.Namespace()))
 		if err != nil {
 			// This namespace doesn't exist.
@@ -253,6 +258,7 @@ func (srv *Server) nodesImportNodeSet(nodes *schema.UANodeSet) error {
 		var refs References = make([]*ua.ReferenceDescription, 0)
 
 		n := NewNode(nid, attrs, refs, nil)
+		n.rolePermissions = resolveRolePermissions(ot.RolePermissions, nid)
 		ns, err := srv.Namespace(int(nid.Namespace()))
 		if err != nil {
 			// This namespace doesn't exist.
@@ -264,7 +270,7 @@ func (srv *Server) nodesImportNodeSet(nodes *schema.UANodeSet) error {
 
 	return nil
 }
-func (srv *Server) refsImportNodeSet(nodes *schema.UANodeSet) error {
+func (srv *Server) refsImportNodeSet(nodes *schema.UANodeSet) error { //nolint:unparam
 
 	srv.cfg.logger.Debugf("new node set last_modified=%v", nodes.LastModifiedAttr)
 
@@ -534,4 +540,39 @@ func (srv *Server) refsImportNodeSet(nodes *schema.UANodeSet) error {
 	}
 
 	return nil
+}
+
+// resolveRolePermissions returns the role permissions for a node.
+// It first tries the XML-provided permissions. If none are present and the
+// node is in namespace 0, it falls back to the generated defaults from the
+// OPC UA specification.
+func resolveRolePermissions(rp *schema.ListOfRolePermissions, nid *ua.NodeID) []*ua.RolePermissionType {
+	var perms []*ua.RolePermissionType
+
+	if rp != nil && len(rp.RolePermission) > 0 {
+		for _, p := range rp.RolePermission {
+			role, ok := ua.RoleByName[p.Value]
+			if !ok {
+				continue
+			}
+			perms = append(perms, &ua.RolePermissionType{
+				RoleID:      role.NodeID(),
+				Permissions: ua.PermissionType(p.PermissionsAttr),
+			})
+		}
+	}
+
+	if len(perms) == 0 && nid.Namespace() == 0 {
+		if def, ok := DefaultNodePermissions[nid.IntID()]; ok {
+			for i := range def.RolePermissions {
+				rp := def.RolePermissions[i]
+				perms = append(perms, &ua.RolePermissionType{
+					RoleID:      rp.RoleID,
+					Permissions: rp.Permissions,
+				})
+			}
+		}
+	}
+
+	return perms
 }

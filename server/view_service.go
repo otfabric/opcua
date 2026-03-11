@@ -73,6 +73,14 @@ func (s *ViewService) Browse(ctx context.Context, sc *uasc.SecureChannel, r ua.R
 			resp.Results[i] = &ua.BrowseResult{StatusCode: ua.StatusBad}
 			continue
 		}
+
+		if node := ns.Node(br.NodeID); node != nil {
+			if st := checkAccessRestrictionsForBrowse(sc, node); st != ua.StatusOK {
+				resp.Results[i] = &ua.BrowseResult{StatusCode: st}
+				continue
+			}
+		}
+
 		result := ns.Browse(br)
 
 		// Apply continuation point logic when maxRefs > 0 and there are more refs.

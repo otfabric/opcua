@@ -73,6 +73,8 @@ type Node struct {
 	refs References
 	val  ValueFunc
 
+	rolePermissions []*ua.RolePermissionType
+
 	ns NameSpace
 }
 
@@ -193,6 +195,19 @@ func (n *Node) attribute(id ua.AttributeID) (*AttrValue, error) {
 				return nil, ua.StatusBadAttributeIDInvalid
 			}
 			return NewAttrValue(val), nil
+		}
+		return nil, ua.StatusBadAttributeIDInvalid
+	case id == ua.AttributeIDRolePermissions || id == ua.AttributeIDUserRolePermissions:
+		if len(n.rolePermissions) > 0 {
+			extObjs := make([]*ua.ExtensionObject, len(n.rolePermissions))
+			for i, rp := range n.rolePermissions {
+				extObjs[i] = &ua.ExtensionObject{Value: rp}
+			}
+			v := ua.MustVariant(extObjs)
+			return NewAttrValue(&ua.DataValue{
+				EncodingMask: ua.DataValueValue,
+				Value:        v,
+			}), nil
 		}
 		return nil, ua.StatusBadAttributeIDInvalid
 	case n.attr == nil:

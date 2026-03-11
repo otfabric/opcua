@@ -42,7 +42,7 @@ type derivedKeys struct {
 	signing, encryption, iv []byte
 }
 
-func generateKeys(hmac *HMAC, seed []byte, signingLength, encryptingLength, encryptingBlockSize int) *derivedKeys {
+func generateKeys(hmac *HMAC, seed []byte, signingLength, encryptingLength, encryptingBlockSize int) *derivedKeys { //nolint:unparam
 	var p []byte
 	a, _ := hmac.Signature(seed)
 	for len(p) < signingLength+encryptingLength+encryptingBlockSize {
