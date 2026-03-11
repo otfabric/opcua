@@ -267,9 +267,12 @@ func (n *Node) TranslateBrowsePathInNamespaceToNodeID(ctx context.Context, ns ui
 
 ```go
 func (n *Node) Walk(ctx context.Context) iter.Seq2[WalkResult, error]
+func (n *Node) WalkLimit(ctx context.Context, maxDepth int) iter.Seq2[WalkResult, error]
 ```
 
-Recursively descends references. Each yielded `WalkResult` contains:
+`Walk` recursively descends through the node's hierarchical references with no depth limit. `WalkLimit` is like `Walk` but stops recursing when depth reaches `maxDepth`; the node at depth `maxDepth` is still yielded. If `maxDepth < 0`, depth is unlimited (same as `Walk`). Use `WalkLimit` for "find node", "find type", or "browse tree" style tools to avoid unbounded traversal (e.g. pass a `-depth` flag from the CLI).
+
+Each yielded `WalkResult` contains:
 
 ```go
 type WalkResult struct {

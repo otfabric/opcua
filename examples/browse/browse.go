@@ -2,24 +2,24 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
-// Example browse recursively walks the OPC-UA address space and outputs
-// all discovered variable nodes as a CSV. It demonstrates the Browse service
-// with hierarchical traversal and attribute reading.
+// Example browse uses Node.WalkLimit to traverse the OPC-UA address space
+// up to a configurable depth and outputs all discovered variable nodes as CSV.
 //
 // Usage:
 //
 //	go run browse.go -endpoint opc.tcp://localhost:4840
+//	go run browse.go -endpoint opc.tcp://localhost:4840 -depth 5
 package main
 
 import (
 	"context"
 	"encoding/csv"
 	"flag"
-	"fmt"
 	"log"
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/otfabric/opcua"
 	"github.com/otfabric/opcua/id"
@@ -52,59 +52,51 @@ func join(a, b string) string {
 	return a + "." + b
 }
 
-const maxDepth = 10
-
-func browse(ctx context.Context, n *opcua.Node, path string, level int) ([]NodeDef, error) {
-	// fmt.Printf("node:%s path:%q level:%d\n", n, path, level)
-	if level > maxDepth {
-		return nil, nil
-	}
-
-	attrs, err := n.Attributes(ctx, ua.AttributeIDNodeClass, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType)
+// nodeDefFromAttrs fetches attributes for the node and builds a NodeDef. Returns (nil, nil) to skip (e.g. access denied).
+func nodeDefFromAttrs(ctx context.Context, node *opcua.Node, path string) (*NodeDef, error) {
+	attrs, err := node.Attributes(ctx, ua.AttributeIDNodeClass, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType)
 	if err != nil {
 		return nil, err
 	}
 
-	var def = NodeDef{
-		NodeID: n.ID,
-	}
+	def := &NodeDef{NodeID: node.ID, Path: path}
 
-	switch err := attrs[0].Status; err {
+	switch attrs[0].Status {
 	case ua.StatusOK:
 		def.NodeClass = ua.NodeClass(attrs[0].Value.Int())
 	case ua.StatusBadSecurityModeInsufficient, ua.StatusBadUserAccessDenied:
 		return nil, nil
 	default:
-		return nil, err
+		return nil, attrs[0].Status
 	}
 
-	switch err := attrs[1].Status; err {
+	switch attrs[1].Status {
 	case ua.StatusOK:
 		def.BrowseName = attrs[1].Value.String()
 	default:
-		return nil, err
+		return nil, attrs[1].Status
 	}
 
-	switch err := attrs[2].Status; err {
+	switch attrs[2].Status {
 	case ua.StatusOK:
 		def.Description = attrs[2].Value.String()
 	case ua.StatusBadAttributeIDInvalid:
 		// ignore
 	default:
-		return nil, err
+		return nil, attrs[2].Status
 	}
 
-	switch err := attrs[3].Status; err {
+	switch attrs[3].Status {
 	case ua.StatusOK:
 		def.AccessLevel = ua.AccessLevelType(attrs[3].Value.Int())
 		def.Writable = def.AccessLevel&ua.AccessLevelTypeCurrentWrite == ua.AccessLevelTypeCurrentWrite
 	case ua.StatusBadAttributeIDInvalid:
 		// ignore
 	default:
-		return nil, err
+		return nil, attrs[3].Status
 	}
 
-	switch err := attrs[4].Status; err {
+	switch attrs[4].Status {
 	case ua.StatusOK:
 		switch v := attrs[4].Value.NodeID().IntID(); v {
 		case id.DateTime:
@@ -137,48 +129,55 @@ func browse(ctx context.Context, n *opcua.Node, path string, level int) ([]NodeD
 	case ua.StatusBadAttributeIDInvalid:
 		// ignore
 	default:
-		return nil, err
+		return nil, attrs[4].Status
 	}
 
-	def.Path = join(path, def.BrowseName)
-	// fmt.Printf("%d: def.Path:%s def.NodeClass:%s\n", level, def.Path, def.NodeClass)
+	return def, nil
+}
 
-	var nodes []NodeDef
-	if def.NodeClass == ua.NodeClassVariable {
-		nodes = append(nodes, def)
-	}
+func browseWithWalkLimit(ctx context.Context, c *opcua.Client, root *opcua.Node, maxDepth int) ([]NodeDef, error) {
+	var nodeList []NodeDef
+	var pathStack []string
 
-	browseChildren := func(refType uint32) error {
-		refs, err := n.ReferencedNodes(ctx, refType, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+	for wr, err := range root.WalkLimit(ctx, maxDepth) {
 		if err != nil {
-			return fmt.Errorf("references: %d: %w", refType, err)
+			return nil, err
 		}
-		// fmt.Printf("found %d child refs\n", len(refs))
-		for _, rn := range refs {
-			children, err := browse(ctx, rn, def.Path, level+1)
-			if err != nil {
-				return fmt.Errorf("browse children: %w", err)
-			}
-			nodes = append(nodes, children...)
+		ref := wr.Ref
+		if ref == nil || ref.NodeID.NodeID == nil {
+			continue
 		}
-		return nil
+		// Update path stack: depth 0 = first level of refs, so path has (depth+1) segments
+		if wr.Depth < len(pathStack) {
+			pathStack = pathStack[:wr.Depth]
+		}
+		name := ""
+		if ref.BrowseName != nil {
+			name = ref.BrowseName.Name
+		}
+		pathStack = append(pathStack, name)
+		path := strings.Join(pathStack, ".")
+
+		node := c.NodeFromExpandedNodeID(ref.NodeID)
+		def, err := nodeDefFromAttrs(ctx, node, path)
+		if err != nil {
+			return nil, err
+		}
+		if def == nil {
+			continue
+		}
+		if def.NodeClass == ua.NodeClassVariable {
+			nodeList = append(nodeList, *def)
+		}
 	}
 
-	if err := browseChildren(id.HasComponent); err != nil {
-		return nil, err
-	}
-	if err := browseChildren(id.Organizes); err != nil {
-		return nil, err
-	}
-	if err := browseChildren(id.HasProperty); err != nil {
-		return nil, err
-	}
-	return nodes, nil
+	return nodeList, nil
 }
 
 func main() {
 	endpoint := flag.String("endpoint", "opc.tcp://localhost:4840", "OPC UA Endpoint URL")
 	nodeID := flag.String("node", "i=84", "node id for the root node") // i=84 is the standard root node
+	depth := flag.Int("depth", 10, "maximum walk depth (0 = root only)")
 	var debugMode bool
 	flag.BoolVar(&debugMode, "debug", false, "enable debug logging")
 
@@ -204,7 +203,7 @@ func main() {
 		log.Fatalf("invalid node id: %s", err)
 	}
 
-	nodeList, err := browse(ctx, c.Node(id), "", 0)
+	nodeList, err := browseWithWalkLimit(ctx, c, c.Node(id), *depth)
 	if err != nil {
 		log.Fatal(err)
 	}

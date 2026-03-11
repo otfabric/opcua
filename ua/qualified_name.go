@@ -14,6 +14,9 @@ type QualifiedName struct {
 }
 
 func (q *QualifiedName) Encode() ([]byte, error) {
+	if q == nil {
+		return nil, nil
+	}
 	buf := NewBuffer(nil)
 	buf.WriteUint16(q.NamespaceIndex)
 	buf.WriteString(q.Name)

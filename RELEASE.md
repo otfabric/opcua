@@ -1,3 +1,37 @@
+# Release v0.1.5
+
+**Date:** 2026-03-11
+**Previous release:** v0.1.4
+
+## Summary
+
+Adds the depth-limited `WalkLimit` API for browsing the address space and fixes a
+nil pointer dereference when encoding `HistoryReadRequest` with optional
+`DataEncoding` (e.g. `history value` / `history event` commands).
+
+## Client: WalkLimit (depth-limited walk)
+
+- **`Node.WalkLimit(ctx, maxDepth)`** — Same as `Walk` but stops recursing when
+  depth reaches `maxDepth`. The node at `maxDepth` is still yielded. Use for
+  "find node", "find type", or "browse tree" style tools to avoid unbounded
+  traversal (e.g. a `-depth` flag on the CLI). If `maxDepth < 0`, depth is
+  unlimited (equivalent to `Walk`).
+- **`Node.Walk(ctx)`** — Unchanged; now implemented via `WalkLimit(ctx, -1)`.
+
+## Bug fix: HistoryReadRequest encoding with nil DataEncoding
+
+Encoding a `HistoryReadRequest` whose `HistoryReadValueID` entries had
+`DataEncoding == nil` caused a panic in `QualifiedName.Encode()` (nil pointer
+dereference). This affected `HistoryReadRawModified`, `HistoryReadEvent`, and
+other history read calls when the optional `DataEncoding` field was omitted.
+
+- **`ua/encode.go`** — Nil pointer fields that implement `BinaryEncoder` are
+  now encoded as no bytes instead of calling `Encode()` on a nil receiver.
+- **`ua/qualified_name.go`** — `QualifiedName.Encode()` guards against a nil
+  receiver and returns `(nil, nil)`.
+
+---
+
 # Release v0.1.4
 
 **Date:** 2026-03-11

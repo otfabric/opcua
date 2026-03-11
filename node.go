@@ -36,14 +36,22 @@ type WalkResult struct {
 // Walk returns an iterator that recursively descends through the node's
 // hierarchical references, yielding each discovered reference along with
 // its depth. The walk uses BrowseAll to automatically follow continuation
-// points.
+// points. For a depth limit, use WalkLimit.
 func (n *Node) Walk(ctx context.Context) iter.Seq2[WalkResult, error] {
+	return n.WalkLimit(ctx, -1)
+}
+
+// WalkLimit is like Walk but stops recursing when depth reaches maxDepth.
+// The node at depth maxDepth is still yielded. If maxDepth < 0, depth is unlimited.
+// Use this for "find node", "find type", or "browse tree" style tools to avoid
+// unbounded traversal (e.g. pass a -depth flag from the CLI).
+func (n *Node) WalkLimit(ctx context.Context, maxDepth int) iter.Seq2[WalkResult, error] {
 	return func(yield func(WalkResult, error) bool) {
-		n.walkRecursive(ctx, 0, yield)
+		n.walkRecursive(ctx, 0, maxDepth, yield)
 	}
 }
 
-func (n *Node) walkRecursive(ctx context.Context, depth int, yield func(WalkResult, error) bool) bool {
+func (n *Node) walkRecursive(ctx context.Context, depth int, maxDepth int, yield func(WalkResult, error) bool) bool {
 	for ref, err := range n.BrowseAll(ctx, id.HierarchicalReferences, ua.BrowseDirectionForward, ua.NodeClassAll, true) {
 		if err != nil {
 			return yield(WalkResult{}, err)
@@ -51,8 +59,11 @@ func (n *Node) walkRecursive(ctx context.Context, depth int, yield func(WalkResu
 		if !yield(WalkResult{Depth: depth, Ref: ref}, nil) {
 			return false
 		}
+		if maxDepth >= 0 && depth+1 > maxDepth {
+			continue
+		}
 		child := n.c.NodeFromExpandedNodeID(ref.NodeID)
-		if !child.walkRecursive(ctx, depth+1, yield) {
+		if !child.walkRecursive(ctx, depth+1, maxDepth, yield) {
 			return false
 		}
 	}

@@ -34,13 +34,8 @@ func TestBrowse(t *testing.T) {
 	}
 	defer c.Close(ctx)
 
-	// browse the nodes
-	nodeList, err := browse(
-		ctx,
-		c.Node(ua.MustParseNodeID("i=84")),
-		"",
-		maxDepth-3, // faster test with reduced depth
-	)
+	// browse the nodes (depth 7 for faster test)
+	nodeList, err := browseWithWalkLimit(ctx, c, c.Node(ua.MustParseNodeID("i=84")), 7)
 	if err != nil {
 		t.Fatal(err)
 	}

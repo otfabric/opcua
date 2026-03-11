@@ -224,6 +224,31 @@ func TestNodeWalk(t *testing.T) {
 	require.Greater(t, count, 0, "Walk should yield at least one result")
 }
 
+func TestNodeWalkLimit(t *testing.T) {
+	_, url := testutil.NewTestServer(t)
+	c := testutil.NewTestClient(t, url)
+	ctx := context.Background()
+
+	n := c.Node(ua.NewNumericNodeID(0, 85)) // Objects folder
+	maxDepth := 2
+	var count int
+	var seenDepth2 bool
+	for wr, err := range n.WalkLimit(ctx, maxDepth) {
+		require.NoError(t, err)
+		require.NotNil(t, wr.Ref)
+		require.LessOrEqual(t, wr.Depth, maxDepth, "WalkLimit must not yield depth > maxDepth")
+		if wr.Depth == 2 {
+			seenDepth2 = true
+		}
+		count++
+		if count > 200 {
+			break
+		}
+	}
+	require.Greater(t, count, 0, "WalkLimit should yield at least one result")
+	require.True(t, seenDepth2, "WalkLimit with maxDepth=2 should yield at least one result at depth 2")
+}
+
 func TestClientServerStatus(t *testing.T) {
 	_, url := testutil.NewTestServer(t)
 	c := testutil.NewTestClient(t, url)

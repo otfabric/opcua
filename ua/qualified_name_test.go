@@ -8,6 +8,17 @@ import (
 	"testing"
 )
 
+func TestQualifiedName_Encode_NilReceiver(t *testing.T) {
+	var q *QualifiedName
+	b, err := q.Encode()
+	if err != nil {
+		t.Fatalf("Encode failed: %v", err)
+	}
+	if b != nil {
+		t.Errorf("nil QualifiedName.Encode() should return nil bytes, got len=%d", len(b))
+	}
+}
+
 func TestQualifiedName(t *testing.T) {
 	cases := []CodecTestCase{
 		{
