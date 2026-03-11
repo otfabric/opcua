@@ -1,3 +1,25 @@
+# Release v0.1.3
+
+**Date:** 2026-03-11
+**Previous release:** v0.1.2
+
+## Summary
+
+Patch release with a small improvement for anonymous authentication when using
+the client (e.g. `--auth anonymous` in example CLIs).
+
+## Client: anonymous auth without pre-set PolicyID
+
+When `AuthAnonymous()` is applied before the server's endpoints are known (for
+example when using `--auth anonymous` on the command line), the
+`AnonymousIdentityToken` is created without a policy ID. The client now
+resolves the correct anonymous user token policy from the server's advertised
+endpoints after `CreateSession` and sets it on the token, so anonymous
+authentication works correctly without requiring endpoint or security options
+to be applied first.
+
+---
+
 # Release v0.1.2
 
 **Date:** 2026-03-11

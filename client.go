@@ -885,10 +885,16 @@ func (c *Client) CreateSession(ctx context.Context, cfg *uasc.SessionConfig) (*S
 		if c.cfg.session.UserIdentityToken == nil {
 			opt := AuthAnonymous()
 			_ = opt(c.cfg) // cannot fail for AuthAnonymous
+		}
 
+		// For anonymous tokens without a PolicyID, look up the correct one
+		// from the server's advertised user token policies. This handles
+		// the common case where AuthAnonymous() was called explicitly
+		// (e.g. via CLI --auth anonymous) which creates the token before
+		// the server's endpoints are known.
+		if tok, ok := c.cfg.session.UserIdentityToken.(*ua.AnonymousIdentityToken); ok && tok.PolicyID == "" {
 			p := anonymousPolicyID(res.ServerEndpoints)
-			opt = AuthPolicyID(p)
-			_ = opt(c.cfg) // cannot fail for AuthPolicyID
+			tok.PolicyID = p
 		}
 
 		s = &Session{
