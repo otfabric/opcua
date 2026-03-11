@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+
 	"github.com/otfabric/opcua/ua"
 	"github.com/otfabric/opcua/uasc"
 )
@@ -13,7 +15,7 @@ type QueryService struct {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.9.3
-func (s *QueryService) QueryFirst(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *QueryService) QueryFirst(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.QueryFirstRequest](r)
@@ -24,7 +26,7 @@ func (s *QueryService) QueryFirst(sc *uasc.SecureChannel, r ua.Request, reqID ui
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.9.4
-func (s *QueryService) QueryNext(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *QueryService) QueryNext(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.QueryNextRequest](r)

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/otfabric/opcua/id"
@@ -27,7 +28,7 @@ func TestNodeManagementService_AddNodes(t *testing.T) {
 				TypeDefinition:     ua.NewExpandedNodeID(nil, "", 0),
 			}},
 		}
-		resp, err := svc.AddNodes(nil, req, 1)
+		resp, err := svc.AddNodes(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		addResp := resp.(*ua.AddNodesResponse)
@@ -50,7 +51,7 @@ func TestNodeManagementService_AddNodes(t *testing.T) {
 				NodeClass:          ua.NodeClassVariable,
 			}},
 		}
-		resp, err := svc.AddNodes(nil, req, 2)
+		resp, err := svc.AddNodes(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		addResp := resp.(*ua.AddNodesResponse)
@@ -67,7 +68,7 @@ func TestNodeManagementService_AddNodes(t *testing.T) {
 				NodeClass:          ua.NodeClassVariable,
 			}},
 		}
-		resp, err := svc.AddNodes(nil, req, 3)
+		resp, err := svc.AddNodes(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		addResp := resp.(*ua.AddNodesResponse)
@@ -76,7 +77,7 @@ func TestNodeManagementService_AddNodes(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.AddNodes(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.AddNodes(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -99,7 +100,7 @@ func TestNodeManagementService_DeleteNodes(t *testing.T) {
 				DeleteTargetReferences: true,
 			}},
 		}
-		resp, err := svc.DeleteNodes(nil, req, 1)
+		resp, err := svc.DeleteNodes(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		delResp := resp.(*ua.DeleteNodesResponse)
@@ -119,7 +120,7 @@ func TestNodeManagementService_DeleteNodes(t *testing.T) {
 				DeleteTargetReferences: true,
 			}},
 		}
-		resp, err := svc.DeleteNodes(nil, req, 2)
+		resp, err := svc.DeleteNodes(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		delResp := resp.(*ua.DeleteNodesResponse)
@@ -134,7 +135,7 @@ func TestNodeManagementService_DeleteNodes(t *testing.T) {
 				NodeID: nil,
 			}},
 		}
-		resp, err := svc.DeleteNodes(nil, req, 3)
+		resp, err := svc.DeleteNodes(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		delResp := resp.(*ua.DeleteNodesResponse)
@@ -143,7 +144,7 @@ func TestNodeManagementService_DeleteNodes(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.DeleteNodes(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.DeleteNodes(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -168,7 +169,7 @@ func TestNodeManagementService_AddReferences(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.AddReferences(nil, req, 1)
+		resp, err := svc.AddReferences(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		addResp := resp.(*ua.AddReferencesResponse)
@@ -189,7 +190,7 @@ func TestNodeManagementService_AddReferences(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.AddReferences(nil, req, 2)
+		resp, err := svc.AddReferences(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		addResp := resp.(*ua.AddReferencesResponse)
@@ -209,7 +210,7 @@ func TestNodeManagementService_AddReferences(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.AddReferences(nil, req, 3)
+		resp, err := svc.AddReferences(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		addResp := resp.(*ua.AddReferencesResponse)
@@ -230,7 +231,7 @@ func TestNodeManagementService_AddReferences(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.AddReferences(nil, req, 4)
+		resp, err := svc.AddReferences(context.Background(), nil, req, 4)
 		require.NoError(t, err)
 
 		addResp := resp.(*ua.AddReferencesResponse)
@@ -251,7 +252,7 @@ func TestNodeManagementService_AddReferences(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.AddReferences(nil, req, 5)
+		resp, err := svc.AddReferences(context.Background(), nil, req, 5)
 		require.NoError(t, err)
 
 		addResp := resp.(*ua.AddReferencesResponse)
@@ -260,7 +261,7 @@ func TestNodeManagementService_AddReferences(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.AddReferences(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.AddReferences(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -285,7 +286,7 @@ func TestNodeManagementService_DeleteReferences(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.DeleteReferences(nil, req, 1)
+		resp, err := svc.DeleteReferences(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		delResp := resp.(*ua.DeleteReferencesResponse)
@@ -307,7 +308,7 @@ func TestNodeManagementService_DeleteReferences(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.DeleteReferences(nil, req, 2)
+		resp, err := svc.DeleteReferences(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		delResp := resp.(*ua.DeleteReferencesResponse)
@@ -328,7 +329,7 @@ func TestNodeManagementService_DeleteReferences(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.DeleteReferences(nil, req, 3)
+		resp, err := svc.DeleteReferences(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		delResp := resp.(*ua.DeleteReferencesResponse)
@@ -337,7 +338,7 @@ func TestNodeManagementService_DeleteReferences(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.DeleteReferences(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.DeleteReferences(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }

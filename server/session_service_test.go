@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/otfabric/opcua/ua"
@@ -24,7 +25,7 @@ func TestSessionService_Cancel(t *testing.T) {
 			RequestHeader: hdr,
 			RequestHandle: 42,
 		}
-		resp, err := svc.Cancel(nil, req, 1)
+		resp, err := svc.Cancel(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		cancelResp := resp.(*ua.CancelResponse)
@@ -52,7 +53,7 @@ func TestSessionService_Cancel(t *testing.T) {
 			RequestHeader: hdr,
 			RequestHandle: 99,
 		}
-		resp, err := svc.Cancel(nil, req, 2)
+		resp, err := svc.Cancel(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		cancelResp := resp.(*ua.CancelResponse)
@@ -66,7 +67,7 @@ func TestSessionService_Cancel(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.Cancel(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.Cancel(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }

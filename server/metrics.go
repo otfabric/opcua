@@ -34,7 +34,7 @@ func WithMetrics(m ServerMetrics) Option {
 
 // serviceName extracts a human-readable service name from a request type.
 // For example, *ua.ReadRequest becomes "Read".
-func serviceName(req interface{}) string {
+func serviceName(req any) string {
 	s := fmt.Sprintf("%T", req)
 	if i := strings.LastIndex(s, "."); i >= 0 {
 		s = s[i+1:]

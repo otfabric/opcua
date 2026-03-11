@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/otfabric/opcua/ua"
@@ -19,7 +20,7 @@ func TestDiscoveryService_FindServers(t *testing.T) {
 
 	t.Run("returns server application description", func(t *testing.T) {
 		req := &ua.FindServersRequest{RequestHeader: reqHeader()}
-		resp, err := svc.FindServers(nil, req, 1)
+		resp, err := svc.FindServers(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		fsResp := resp.(*ua.FindServersResponse)
@@ -28,7 +29,7 @@ func TestDiscoveryService_FindServers(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.FindServers(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.FindServers(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -48,7 +49,7 @@ func TestDiscoveryService_GetEndpoints(t *testing.T) {
 			RequestHeader: reqHeader(),
 			EndpointURL:   url,
 		}
-		resp, err := svc.GetEndpoints(nil, req, 1)
+		resp, err := svc.GetEndpoints(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		epResp := resp.(*ua.GetEndpointsResponse)
@@ -64,7 +65,7 @@ func TestDiscoveryService_GetEndpoints(t *testing.T) {
 			RequestHeader: reqHeader(),
 			EndpointURL:   "OPC.TCP://LOCALHOST:4840",
 		}
-		resp, err := svc.GetEndpoints(nil, req, 1)
+		resp, err := svc.GetEndpoints(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		epResp := resp.(*ua.GetEndpointsResponse)
@@ -79,7 +80,7 @@ func TestDiscoveryService_GetEndpoints(t *testing.T) {
 			RequestHeader: reqHeader(),
 			EndpointURL:   "opc.tcp://unknown:9999",
 		}
-		resp, err := svc.GetEndpoints(nil, req, 1)
+		resp, err := svc.GetEndpoints(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		epResp := resp.(*ua.GetEndpointsResponse)
@@ -95,9 +96,11 @@ func TestDiscoveryService_UnsupportedMethods(t *testing.T) {
 		name    string
 		handler func(req ua.Request) (ua.Response, error)
 	}{
-		{"FindServersOnNetwork", func(r ua.Request) (ua.Response, error) { return svc.FindServersOnNetwork(nil, r, 1) }},
-		{"RegisterServer", func(r ua.Request) (ua.Response, error) { return svc.RegisterServer(nil, r, 1) }},
-		{"RegisterServer2", func(r ua.Request) (ua.Response, error) { return svc.RegisterServer2(nil, r, 1) }},
+		{"FindServersOnNetwork", func(r ua.Request) (ua.Response, error) {
+			return svc.FindServersOnNetwork(context.Background(), nil, r, 1)
+		}},
+		{"RegisterServer", func(r ua.Request) (ua.Response, error) { return svc.RegisterServer(context.Background(), nil, r, 1) }},
+		{"RegisterServer2", func(r ua.Request) (ua.Response, error) { return svc.RegisterServer2(context.Background(), nil, r, 1) }},
 	}
 
 	for _, tt := range tests {
@@ -106,11 +109,11 @@ func TestDiscoveryService_UnsupportedMethods(t *testing.T) {
 			var err error
 			switch tt.name {
 			case "FindServersOnNetwork":
-				resp, err = svc.FindServersOnNetwork(nil, &ua.FindServersOnNetworkRequest{RequestHeader: reqHeader()}, 1)
+				resp, err = svc.FindServersOnNetwork(context.Background(), nil, &ua.FindServersOnNetworkRequest{RequestHeader: reqHeader()}, 1)
 			case "RegisterServer":
-				resp, err = svc.RegisterServer(nil, &ua.RegisterServerRequest{RequestHeader: reqHeader()}, 1)
+				resp, err = svc.RegisterServer(context.Background(), nil, &ua.RegisterServerRequest{RequestHeader: reqHeader()}, 1)
 			case "RegisterServer2":
-				resp, err = svc.RegisterServer2(nil, &ua.RegisterServer2Request{RequestHeader: reqHeader()}, 1)
+				resp, err = svc.RegisterServer2(context.Background(), nil, &ua.RegisterServer2Request{RequestHeader: reqHeader()}, 1)
 			}
 			require.NoError(t, err)
 			fault := resp.(*ua.ServiceFault)

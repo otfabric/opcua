@@ -1712,7 +1712,7 @@ func (c *Client) BrowseAll(ctx context.Context, nodeID *ua.NodeID) ([]*ua.Refere
 //
 // objectID is the NodeID of the object that owns the method.
 // methodID is the NodeID of the method to call.
-func (c *Client) CallMethod(ctx context.Context, objectID, methodID *ua.NodeID, args ...interface{}) (*ua.CallMethodResult, error) {
+func (c *Client) CallMethod(ctx context.Context, objectID, methodID *ua.NodeID, args ...any) (*ua.CallMethodResult, error) {
 	variants := make([]*ua.Variant, len(args))
 	for i, a := range args {
 		v, err := ua.NewVariant(a)
@@ -1930,7 +1930,7 @@ func (c *Client) ReadHistoryAll(ctx context.Context, nodeID *ua.NodeID, start, e
 // WriteNodeValue writes a Go value to the Value attribute of a node.
 // The value is wrapped in a Variant using NewVariant, which auto-detects
 // the OPC-UA type from the Go type.
-func (c *Client) WriteNodeValue(ctx context.Context, nodeID *ua.NodeID, value interface{}) (ua.StatusCode, error) {
+func (c *Client) WriteNodeValue(ctx context.Context, nodeID *ua.NodeID, value any) (ua.StatusCode, error) {
 	v, err := ua.NewVariant(value)
 	if err != nil {
 		return ua.StatusBad, fmt.Errorf("opcua: create variant: %w", err)

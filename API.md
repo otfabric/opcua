@@ -74,7 +74,7 @@ func (c *Client) Write(ctx context.Context, req *ua.WriteRequest) (*ua.WriteResp
 func (c *Client) WriteValue(ctx context.Context, nodeID *ua.NodeID, value *ua.DataValue) (ua.StatusCode, error)
 func (c *Client) WriteValues(ctx context.Context, writes ...*ua.WriteValue) ([]ua.StatusCode, error)
 func (c *Client) WriteAttribute(ctx context.Context, nodeID *ua.NodeID, attrID ua.AttributeID, value *ua.DataValue) (ua.StatusCode, error)
-func (c *Client) WriteNodeValue(ctx context.Context, nodeID *ua.NodeID, value interface{}) (ua.StatusCode, error)
+func (c *Client) WriteNodeValue(ctx context.Context, nodeID *ua.NodeID, value any) (ua.StatusCode, error)
 ```
 
 `WriteNodeValue` wraps a plain Go value into a `DataValue` and writes it to
@@ -119,7 +119,7 @@ underlying `HistoryUpdateRequest`.
 
 ```go
 func (c *Client) Call(ctx context.Context, req *ua.CallMethodRequest) (*ua.CallMethodResult, error)
-func (c *Client) CallMethod(ctx context.Context, objectID, methodID *ua.NodeID, args ...interface{}) (*ua.CallMethodResult, error)
+func (c *Client) CallMethod(ctx context.Context, objectID, methodID *ua.NodeID, args ...any) (*ua.CallMethodResult, error)
 func (c *Client) MethodArguments(ctx context.Context, objectID, methodID *ua.NodeID) (inputs, outputs []*ua.Argument, err error)
 ```
 
@@ -1043,6 +1043,16 @@ type MethodHandler func(ctx context.Context, objectID, methodID *ua.NodeID, args
 func (s *Server) RegisterMethod(objectID, methodID *ua.NodeID, handler MethodHandler)
 ```
 
+#### Custom service handlers
+
+Handlers process incoming service requests by TypeID. The context is request-scoped and supports cancellation and timeouts.
+
+```go
+type Handler func(ctx context.Context, sc *uasc.SecureChannel, req ua.Request, reqID uint32) (ua.Response, error)
+
+func (s *Server) RegisterHandler(typeID uint16, h Handler)
+```
+
 #### Info
 
 ```go
@@ -1352,7 +1362,7 @@ var (
 
 ```go
 func Is(err error, target error) bool
-func As(err error, target interface{}) bool
+func As(err error, target any) bool
 func Unwrap(err error) error
 func Join(errs ...error) error
 ```

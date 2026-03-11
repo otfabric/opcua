@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"strings"
 
 	"github.com/otfabric/opcua/ua"
@@ -15,7 +16,7 @@ type DiscoveryService struct {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4.2
-func (s *DiscoveryService) FindServers(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *DiscoveryService) FindServers(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.FindServersRequest](r)
@@ -34,7 +35,7 @@ func (s *DiscoveryService) FindServers(sc *uasc.SecureChannel, r ua.Request, req
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4.3
-func (s *DiscoveryService) FindServersOnNetwork(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *DiscoveryService) FindServersOnNetwork(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.FindServersOnNetworkRequest](r)
@@ -45,7 +46,7 @@ func (s *DiscoveryService) FindServersOnNetwork(sc *uasc.SecureChannel, r ua.Req
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4.4
-func (s *DiscoveryService) GetEndpoints(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *DiscoveryService) GetEndpoints(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.GetEndpointsRequest](r)
@@ -71,7 +72,7 @@ func (s *DiscoveryService) GetEndpoints(sc *uasc.SecureChannel, r ua.Request, re
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4.5
-func (s *DiscoveryService) RegisterServer(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *DiscoveryService) RegisterServer(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.RegisterServerRequest](r)
@@ -82,7 +83,7 @@ func (s *DiscoveryService) RegisterServer(sc *uasc.SecureChannel, r ua.Request, 
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4.6
-func (s *DiscoveryService) RegisterServer2(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *DiscoveryService) RegisterServer2(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.RegisterServer2Request](r)

@@ -32,7 +32,7 @@ type ViewService struct {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.2
-func (s *ViewService) Browse(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *ViewService) Browse(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 
 	req, err := safeReq[*ua.BrowseRequest](r)
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *ViewService) storeContinuation(refs []*ua.ReferenceDescription) []byte 
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.3
-func (s *ViewService) BrowseNext(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *ViewService) BrowseNext(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.BrowseNextRequest](r)
@@ -225,7 +225,7 @@ func getSubRefs(srv *Server, nid *ua.NodeID) []*ua.NodeID {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.4
-func (s *ViewService) TranslateBrowsePathsToNodeIDs(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *ViewService) TranslateBrowsePathsToNodeIDs(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.TranslateBrowsePathsToNodeIDsRequest](r)
@@ -327,7 +327,7 @@ func (s *ViewService) translatePath(bp *ua.BrowsePath) *ua.BrowsePathResult {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.5
-func (s *ViewService) RegisterNodes(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *ViewService) RegisterNodes(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.RegisterNodesRequest](r)
@@ -361,7 +361,7 @@ func (s *ViewService) RegisterNodes(sc *uasc.SecureChannel, r ua.Request, reqID 
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.6
-func (s *ViewService) UnregisterNodes(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *ViewService) UnregisterNodes(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.UnregisterNodesRequest](r)

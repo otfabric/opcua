@@ -37,3 +37,14 @@ jobs:
 
       - name: Run Tests
         run: make test integration
+
+      - name: Run Tests with Coverage
+        run: make coverage
+
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Run Linters
+        run: |
+          make lint
+          make lint-ci

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/otfabric/opcua/ua"
@@ -78,7 +79,7 @@ func TestMonitoredItemService_ModifyMonitoredItems(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.ModifyMonitoredItems(nil, req, 1)
+		resp, err := svc.ModifyMonitoredItems(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		modResp := resp.(*ua.ModifyMonitoredItemsResponse)
@@ -102,7 +103,7 @@ func TestMonitoredItemService_ModifyMonitoredItems(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.ModifyMonitoredItems(nil, req, 2)
+		resp, err := svc.ModifyMonitoredItems(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		modResp := resp.(*ua.ModifyMonitoredItemsResponse)
@@ -111,7 +112,7 @@ func TestMonitoredItemService_ModifyMonitoredItems(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.ModifyMonitoredItems(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.ModifyMonitoredItems(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -144,7 +145,7 @@ func TestMonitoredItemService_SetTriggering(t *testing.T) {
 			LinksToAdd:       []uint32{linkedID},
 			LinksToRemove:    []uint32{},
 		}
-		resp, err := svc.SetTriggering(nil, req, 1)
+		resp, err := svc.SetTriggering(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		trigResp := resp.(*ua.SetTriggeringResponse)
@@ -160,7 +161,7 @@ func TestMonitoredItemService_SetTriggering(t *testing.T) {
 			TriggeringItemID: 99999,
 			LinksToAdd:       []uint32{linkedID},
 		}
-		resp, err := svc.SetTriggering(nil, req, 2)
+		resp, err := svc.SetTriggering(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		trigResp := resp.(*ua.SetTriggeringResponse)
@@ -175,7 +176,7 @@ func TestMonitoredItemService_SetTriggering(t *testing.T) {
 			LinksToAdd:       []uint32{99999},
 			LinksToRemove:    []uint32{},
 		}
-		resp, err := svc.SetTriggering(nil, req, 3)
+		resp, err := svc.SetTriggering(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		trigResp := resp.(*ua.SetTriggeringResponse)
@@ -185,7 +186,7 @@ func TestMonitoredItemService_SetTriggering(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.SetTriggering(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.SetTriggering(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }

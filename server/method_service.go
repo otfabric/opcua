@@ -23,7 +23,7 @@ type MethodService struct {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.2
-func (s *MethodService) Call(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *MethodService) Call(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.CallRequest](r)
@@ -38,12 +38,12 @@ func (s *MethodService) Call(sc *uasc.SecureChannel, r ua.Request, reqID uint32)
 
 	for i, m := range req.MethodsToCall {
 		if m.MethodID != nil {
-			if sc := ac.CheckCall(context.Background(), sess, m.MethodID); sc != ua.StatusOK {
+			if sc := ac.CheckCall(ctx, sess, m.MethodID); sc != ua.StatusOK {
 				results[i] = &ua.CallMethodResult{StatusCode: sc}
 				continue
 			}
 		}
-		results[i] = s.callMethod(m)
+		results[i] = s.callMethod(ctx, m)
 	}
 
 	return &ua.CallResponse{
@@ -60,7 +60,7 @@ func (s *MethodService) Call(sc *uasc.SecureChannel, r ua.Request, reqID uint32)
 	}, nil
 }
 
-func (s *MethodService) callMethod(m *ua.CallMethodRequest) *ua.CallMethodResult {
+func (s *MethodService) callMethod(ctx context.Context, m *ua.CallMethodRequest) *ua.CallMethodResult {
 	if m.ObjectID == nil || m.MethodID == nil {
 		return &ua.CallMethodResult{StatusCode: ua.StatusBadMethodInvalid}
 	}
@@ -80,7 +80,7 @@ func (s *MethodService) callMethod(m *ua.CallMethodRequest) *ua.CallMethodResult
 		return &ua.CallMethodResult{StatusCode: ua.StatusBadMethodInvalid}
 	}
 
-	outputs, status := h(context.Background(), m.ObjectID, m.MethodID, m.InputArguments)
+	outputs, status := h(ctx, m.ObjectID, m.MethodID, m.InputArguments)
 
 	inputResults := make([]ua.StatusCode, len(m.InputArguments))
 	for j := range inputResults {

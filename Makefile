@@ -1,39 +1,75 @@
-# go test -count=1 disables the test cache so that all tests are run every time.
+# Self-documented Makefile (https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html)
+# Run 'make' or 'make help' to list targets.
 
-all: fmt test integration selfintegration examples
+.DEFAULT_GOAL := help
 
-test:
-	go test -count=1 -race ./...
+.PHONY: help all test coverage cover lint lint-ci fmt vet integration selfintegration examples test-race install-py-opcua gen release
 
-lint:
-	staticcheck ./...
+help: ## Show this help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-22s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-fmt:
-	gofmt -w .
+all: ## Format, test, integration tests, and build examples
+	@echo "Running all: fmt, test, integration, selfintegration, examples"
+	@$(MAKE) fmt test integration selfintegration examples
 
-integration:
-	go test -count=1 -race -v -tags=integration ./tests/python...
+check: fmt lint lint-ci vet test ## Run all checks (format, lint, vet, test)
 
-selfintegration:
-	go test -count=1 -race -v -tags=integration ./tests/go...
+test: ## Run unit tests with race detector
+	@echo "Running unit tests (race detector)"
+	@go test -count=1 -race ./...
 
-examples:
-	go build -o build/ ./examples/...
+coverage: ## Run tests with coverage (writes coverage.out)
+	@echo "Running tests with coverage"
+	@go test -count=1 -race -coverprofile=coverage.out -covermode=atomic ./...
 
-test-race:
-	go test -count=1 -race ./...
-	go test -count=1 -race -v -tags=integration ./tests/python...
-	go test -count=1 -race -v -tags=integration ./tests/go...
+cover: coverage ## Open coverage report in browser (run coverage first)
+	@echo "Opening coverage report in browser"
+	@go tool cover -html=coverage.out
 
-install-py-opcua:
-	pip3 install opcua
+lint: ## Run staticcheck
+	@echo "Running staticcheck"
+	@staticcheck ./...
 
-gen:
-	which stringer || go install golang.org/x/tools/cmd/stringer@latest
-	find . -name '*_gen.go' -delete
-	go generate ./...
+lint-ci: ## Run golangci-lint (install: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+	@echo "Running golangci-lint"
+	@golangci-lint run ./...
 
-release:
-	GITHUB_TOKEN=$$(security find-generic-password -gs GITHUB_TOKEN -w) goreleaser --clean
+fmt: ## Format Go code with gofmt
+	@echo "Running gofmt"
+	@gofmt -w .
 
-.PHONY: all examples gen integration test release
+vet: ## Run go vet on project packages
+	@echo "Running go vet"
+	@go vet ./...
+
+integration: ## Run integration tests (Python client vs Go server)
+	@echo "Running integration tests (Python client vs Go server)"
+	@go test -count=1 -race -v -tags=integration ./tests/python...
+
+selfintegration: ## Run integration tests (Go client vs in-process server)
+	@echo "Running integration tests (Go client vs in-process server)"
+	@go test -count=1 -race -v -tags=integration ./tests/go...
+
+examples: ## Build all examples into build/
+	@echo "Building examples"
+	@go build -o build/ ./examples/...
+
+test-race: ## Run all tests (unit + both integration suites) with race detector
+	@echo "Running all tests with race detector (unit + integration)"
+	@go test -count=1 -race ./...
+	@go test -count=1 -race -v -tags=integration ./tests/python...
+	@go test -count=1 -race -v -tags=integration ./tests/go...
+
+install-py-opcua: ## Install Python opcua package (for integration tests)
+	@echo "Installing Python opcua package"
+	@pip3 install opcua
+
+gen: ## Regenerate code (stringer, go generate)
+	@echo "Regenerating code (stringer, go generate)"
+	@which stringer || go install golang.org/x/tools/cmd/stringer@latest
+	@find . -name '*_gen.go' -delete
+	@go generate ./...
+
+release: ## Run goreleaser (uses GITHUB_TOKEN from keychain)
+	@echo "Running goreleaser"
+	@GITHUB_TOKEN=$$(security find-generic-password -gs GITHUB_TOKEN -w) goreleaser --clean

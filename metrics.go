@@ -30,7 +30,7 @@ type ClientMetrics interface {
 // serviceName extracts a human-readable service name from a request type.
 // For example, *ua.ReadRequest becomes "Read" and *ua.CreateSubscriptionRequest
 // becomes "CreateSubscription".
-func serviceName(req interface{}) string {
+func serviceName(req any) string {
 	s := fmt.Sprintf("%T", req)
 	// Strip package prefix (e.g. "*ua.")
 	if i := strings.LastIndex(s, "."); i >= 0 {

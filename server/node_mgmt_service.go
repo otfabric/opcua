@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"time"
 
 	"github.com/otfabric/opcua/ua"
@@ -15,7 +16,7 @@ type NodeManagementService struct {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.2
-func (s *NodeManagementService) AddNodes(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *NodeManagementService) AddNodes(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.AddNodesRequest](r)
@@ -87,7 +88,7 @@ func (s *NodeManagementService) addNode(item *ua.AddNodesItem) *ua.AddNodesResul
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.3
-func (s *NodeManagementService) AddReferences(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *NodeManagementService) AddReferences(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.AddReferencesRequest](r)
@@ -141,7 +142,7 @@ func (s *NodeManagementService) AddReferences(sc *uasc.SecureChannel, r ua.Reque
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.4
-func (s *NodeManagementService) DeleteNodes(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *NodeManagementService) DeleteNodes(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.DeleteNodesRequest](r)
@@ -178,7 +179,7 @@ func (s *NodeManagementService) DeleteNodes(sc *uasc.SecureChannel, r ua.Request
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.5
-func (s *NodeManagementService) DeleteReferences(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *NodeManagementService) DeleteReferences(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.DeleteReferencesRequest](r)

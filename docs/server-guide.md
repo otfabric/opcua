@@ -192,32 +192,20 @@ ns.DeleteNode(nodeID)
 
 ## Methods
 
-Register callable methods on the server:
+Register callable methods on the server. The handler has type [MethodHandler](https://pkg.go.dev/github.com/otfabric/opcua/server#MethodHandler): it receives `context.Context`, the object and method NodeIDs, and the input arguments, and returns output arguments and a status code.
 
 ```go
-// Define the method handler
-handler := func(req *ua.CallMethodRequest) *ua.CallMethodResult {
-    // Extract input arguments
-    if len(req.InputArguments) < 1 {
-        return &ua.CallMethodResult{
-            StatusCode: ua.StatusBadArgumentsMissing,
-        }
+// Define the method handler: (ctx, objectID, methodID, args) -> (outputs, status)
+handler := func(ctx context.Context, objectID, methodID *ua.NodeID, args []*ua.Variant) ([]*ua.Variant, ua.StatusCode) {
+    if len(args) < 1 {
+        return nil, ua.StatusBadArgumentsMissing
     }
-
-    factor, ok := req.InputArguments[0].Value().(float64)
-    if !ok {
-        return &ua.CallMethodResult{
-            StatusCode: ua.StatusBadTypeMismatch,
-        }
+    factor, err := args[0].Float()
+    if err != nil {
+        return nil, ua.StatusBadTypeMismatch
     }
-
-    // Do work
     result := factor * 2.0
-
-    return &ua.CallMethodResult{
-        StatusCode:      ua.StatusOK,
-        OutputArguments: []*ua.Variant{ua.MustVariant(result)},
-    }
+    return []*ua.Variant{ua.MustVariant(result)}, ua.StatusOK
 }
 
 // Register: objectID is the parent object, methodID is the method node
@@ -413,12 +401,12 @@ func main() {
     )
     ns.AddNode(tempNode)
 
-    // Register a method
+    // Register a method (handler: ctx, objectID, methodID, args -> outputs, status)
     s.RegisterMethod(
         ua.NewNumericNodeID(ns.ID(), 1000),  // object
         ua.NewNumericNodeID(ns.ID(), 2001),  // method
-        func(req *ua.CallMethodRequest) *ua.CallMethodResult {
-            return &ua.CallMethodResult{StatusCode: ua.StatusOK}
+        func(ctx context.Context, objectID, methodID *ua.NodeID, args []*ua.Variant) ([]*ua.Variant, ua.StatusCode) {
+            return nil, ua.StatusOK
         },
     )
 

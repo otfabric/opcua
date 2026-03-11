@@ -42,7 +42,7 @@ func (s *SubscriptionService) DeleteSubscription(id uint32) {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.2
-func (s *SubscriptionService) CreateSubscription(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *SubscriptionService) CreateSubscription(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.CreateSubscriptionRequest](r)
@@ -89,7 +89,7 @@ func (s *SubscriptionService) CreateSubscription(sc *uasc.SecureChannel, r ua.Re
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.3
-func (s *SubscriptionService) ModifySubscription(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *SubscriptionService) ModifySubscription(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.ModifySubscriptionRequest](r)
@@ -151,7 +151,7 @@ func (s *SubscriptionService) ModifySubscription(sc *uasc.SecureChannel, r ua.Re
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.4
-func (s *SubscriptionService) SetPublishingMode(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *SubscriptionService) SetPublishingMode(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.SetPublishingModeRequest](r)
@@ -196,7 +196,7 @@ func (s *SubscriptionService) SetPublishingMode(sc *uasc.SecureChannel, r ua.Req
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.5
-func (s *SubscriptionService) Publish(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *SubscriptionService) Publish(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("raw publish request")
 
 	req, err := safeReq[*ua.PublishRequest](r)
@@ -240,7 +240,7 @@ func (s *SubscriptionService) Publish(sc *uasc.SecureChannel, r ua.Request, reqI
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.6
-func (s *SubscriptionService) Republish(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *SubscriptionService) Republish(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.RepublishRequest](r)
@@ -272,7 +272,7 @@ func (s *SubscriptionService) Republish(sc *uasc.SecureChannel, r ua.Request, re
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.7
-func (s *SubscriptionService) TransferSubscriptions(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *SubscriptionService) TransferSubscriptions(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.TransferSubscriptionsRequest](r)
@@ -315,7 +315,7 @@ func (s *SubscriptionService) TransferSubscriptions(sc *uasc.SecureChannel, r ua
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.8
-func (s *SubscriptionService) DeleteSubscriptions(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *SubscriptionService) DeleteSubscriptions(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.DeleteSubscriptionsRequest](r)

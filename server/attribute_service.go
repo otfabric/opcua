@@ -16,7 +16,7 @@ type AttributeService struct {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.10.2
-func (s *AttributeService) Read(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *AttributeService) Read(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.ReadRequest](r)
@@ -31,7 +31,7 @@ func (s *AttributeService) Read(sc *uasc.SecureChannel, r ua.Request, reqID uint
 	for i, n := range req.NodesToRead {
 		s.srv.cfg.logger.Debugf("read node_id=%v attribute=%v", n.NodeID, n.AttributeID)
 
-		if sc := ac.CheckRead(context.Background(), sess, n.NodeID); sc != ua.StatusOK {
+		if sc := ac.CheckRead(ctx, sess, n.NodeID); sc != ua.StatusOK {
 			results[i] = &ua.DataValue{
 				EncodingMask:    ua.DataValueServerTimestamp | ua.DataValueStatusCode,
 				ServerTimestamp: time.Now(),
@@ -62,7 +62,7 @@ func (s *AttributeService) Read(sc *uasc.SecureChannel, r ua.Request, reqID uint
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.10.3
-func (s *AttributeService) HistoryRead(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *AttributeService) HistoryRead(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.HistoryReadRequest](r)
@@ -87,7 +87,7 @@ func (s *AttributeService) HistoryRead(sc *uasc.SecureChannel, r ua.Request, req
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.10.4
-func (s *AttributeService) Write(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *AttributeService) Write(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 
 	req, err := safeReq[*ua.WriteRequest](r)
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *AttributeService) Write(sc *uasc.SecureChannel, r ua.Request, reqID uin
 		n := req.NodesToWrite[i]
 		s.srv.cfg.logger.Debugf("write node_id=%v attribute=%v", n.NodeID, n.AttributeID)
 
-		if sc := ac.CheckWrite(context.Background(), sess, n.NodeID); sc != ua.StatusOK {
+		if sc := ac.CheckWrite(ctx, sess, n.NodeID); sc != ua.StatusOK {
 			status[i] = sc
 			continue
 		}
@@ -135,7 +135,7 @@ func (s *AttributeService) Write(sc *uasc.SecureChannel, r ua.Request, reqID uin
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.10.5
-func (s *AttributeService) HistoryUpdate(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *AttributeService) HistoryUpdate(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.HistoryUpdateRequest](r)

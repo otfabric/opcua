@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/otfabric/opcua/id"
@@ -28,7 +29,7 @@ func TestViewService_Browse(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Browse(nil, req, 1)
+		resp, err := svc.Browse(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		browseResp := resp.(*ua.BrowseResponse)
@@ -51,7 +52,7 @@ func TestViewService_Browse(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Browse(nil, req, 1)
+		resp, err := svc.Browse(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		browseResp := resp.(*ua.BrowseResponse)
@@ -74,7 +75,7 @@ func TestViewService_Browse(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Browse(nil, req, 1)
+		resp, err := svc.Browse(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		browseResp := resp.(*ua.BrowseResponse)
@@ -95,7 +96,7 @@ func TestViewService_Browse(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Browse(nil, req, 1)
+		resp, err := svc.Browse(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		browseResp := resp.(*ua.BrowseResponse)
@@ -123,7 +124,7 @@ func TestViewService_Browse(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Browse(nil, req, 1)
+		resp, err := svc.Browse(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		browseResp := resp.(*ua.BrowseResponse)
@@ -133,7 +134,7 @@ func TestViewService_Browse(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.Browse(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.Browse(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -165,28 +166,28 @@ func TestViewService_UnsupportedMethods(t *testing.T) {
 	svc := &ViewService{srv: srv, cps: make(map[string]*continuationPoint)}
 
 	t.Run("BrowseNext empty", func(t *testing.T) {
-		resp, err := svc.BrowseNext(nil, &ua.BrowseNextRequest{RequestHeader: reqHeader()}, 1)
+		resp, err := svc.BrowseNext(context.Background(), nil, &ua.BrowseNextRequest{RequestHeader: reqHeader()}, 1)
 		require.NoError(t, err)
 		browseResp := resp.(*ua.BrowseNextResponse)
 		assert.Empty(t, browseResp.Results)
 	})
 
 	t.Run("TranslateBrowsePathsToNodeIDs empty", func(t *testing.T) {
-		resp, err := svc.TranslateBrowsePathsToNodeIDs(nil, &ua.TranslateBrowsePathsToNodeIDsRequest{RequestHeader: reqHeader()}, 1)
+		resp, err := svc.TranslateBrowsePathsToNodeIDs(context.Background(), nil, &ua.TranslateBrowsePathsToNodeIDsRequest{RequestHeader: reqHeader()}, 1)
 		require.NoError(t, err)
 		transResp := resp.(*ua.TranslateBrowsePathsToNodeIDsResponse)
 		assert.Empty(t, transResp.Results)
 	})
 
 	t.Run("RegisterNodes", func(t *testing.T) {
-		resp, err := svc.RegisterNodes(nil, &ua.RegisterNodesRequest{RequestHeader: reqHeader()}, 1)
+		resp, err := svc.RegisterNodes(context.Background(), nil, &ua.RegisterNodesRequest{RequestHeader: reqHeader()}, 1)
 		require.NoError(t, err)
 		regResp := resp.(*ua.RegisterNodesResponse)
 		assert.Equal(t, ua.StatusOK, regResp.ResponseHeader.ServiceResult)
 	})
 
 	t.Run("UnregisterNodes", func(t *testing.T) {
-		resp, err := svc.UnregisterNodes(nil, &ua.UnregisterNodesRequest{RequestHeader: reqHeader()}, 1)
+		resp, err := svc.UnregisterNodes(context.Background(), nil, &ua.UnregisterNodesRequest{RequestHeader: reqHeader()}, 1)
 		require.NoError(t, err)
 		unregResp := resp.(*ua.UnregisterNodesResponse)
 		assert.Equal(t, ua.StatusOK, unregResp.ResponseHeader.ServiceResult)
@@ -216,7 +217,7 @@ func TestViewService_BrowseNext(t *testing.T) {
 				ResultMask:      uint32(ua.BrowseResultMaskAll),
 			}},
 		}
-		resp, err := svc.Browse(nil, req, 1)
+		resp, err := svc.Browse(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		browseResp := resp.(*ua.BrowseResponse)
@@ -232,7 +233,7 @@ func TestViewService_BrowseNext(t *testing.T) {
 			ReleaseContinuationPoints: false,
 			ContinuationPoints:        [][]byte{result.ContinuationPoint},
 		}
-		nextResp, err := svc.BrowseNext(nil, nextReq, 2)
+		nextResp, err := svc.BrowseNext(context.Background(), nil, nextReq, 2)
 		require.NoError(t, err)
 
 		browseNextResp := nextResp.(*ua.BrowseNextResponse)
@@ -254,7 +255,7 @@ func TestViewService_BrowseNext(t *testing.T) {
 				ResultMask:      uint32(ua.BrowseResultMaskAll),
 			}},
 		}
-		resp, err := svc.Browse(nil, req, 1)
+		resp, err := svc.Browse(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 		cp := resp.(*ua.BrowseResponse).Results[0].ContinuationPoint
 		require.NotEmpty(t, cp)
@@ -265,7 +266,7 @@ func TestViewService_BrowseNext(t *testing.T) {
 			ReleaseContinuationPoints: true,
 			ContinuationPoints:        [][]byte{cp},
 		}
-		releaseResp, err := svc.BrowseNext(nil, releaseReq, 3)
+		releaseResp, err := svc.BrowseNext(context.Background(), nil, releaseReq, 3)
 		require.NoError(t, err)
 		browseRelease := releaseResp.(*ua.BrowseNextResponse)
 		require.Len(t, browseRelease.Results, 1)
@@ -277,7 +278,7 @@ func TestViewService_BrowseNext(t *testing.T) {
 			ReleaseContinuationPoints: false,
 			ContinuationPoints:        [][]byte{cp},
 		}
-		nextResp, err := svc.BrowseNext(nil, nextReq, 4)
+		nextResp, err := svc.BrowseNext(context.Background(), nil, nextReq, 4)
 		require.NoError(t, err)
 		browseNext := nextResp.(*ua.BrowseNextResponse)
 		require.Len(t, browseNext.Results, 1)
@@ -290,7 +291,7 @@ func TestViewService_BrowseNext(t *testing.T) {
 			ReleaseContinuationPoints: false,
 			ContinuationPoints:        [][]byte{[]byte("nonexistent")},
 		}
-		nextResp, err := svc.BrowseNext(nil, nextReq, 5)
+		nextResp, err := svc.BrowseNext(context.Background(), nil, nextReq, 5)
 		require.NoError(t, err)
 		browseNext := nextResp.(*ua.BrowseNextResponse)
 		require.Len(t, browseNext.Results, 1)
@@ -322,7 +323,7 @@ func TestViewService_TranslateBrowsePathsToNodeIDs(t *testing.T) {
 				},
 			}},
 		}
-		resp, err := svc.TranslateBrowsePathsToNodeIDs(nil, req, 1)
+		resp, err := svc.TranslateBrowsePathsToNodeIDs(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		transResp := resp.(*ua.TranslateBrowsePathsToNodeIDsResponse)
@@ -348,7 +349,7 @@ func TestViewService_TranslateBrowsePathsToNodeIDs(t *testing.T) {
 				},
 			}},
 		}
-		resp, err := svc.TranslateBrowsePathsToNodeIDs(nil, req, 2)
+		resp, err := svc.TranslateBrowsePathsToNodeIDs(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		transResp := resp.(*ua.TranslateBrowsePathsToNodeIDsResponse)
@@ -371,7 +372,7 @@ func TestViewService_TranslateBrowsePathsToNodeIDs(t *testing.T) {
 				},
 			}},
 		}
-		resp, err := svc.TranslateBrowsePathsToNodeIDs(nil, req, 3)
+		resp, err := svc.TranslateBrowsePathsToNodeIDs(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		transResp := resp.(*ua.TranslateBrowsePathsToNodeIDsResponse)
@@ -394,7 +395,7 @@ func TestViewService_RegisterNodes(t *testing.T) {
 			RequestHeader:   reqHeader(),
 			NodesToRegister: nodeIDs,
 		}
-		resp, err := svc.RegisterNodes(nil, req, 1)
+		resp, err := svc.RegisterNodes(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		regResp := resp.(*ua.RegisterNodesResponse)
@@ -411,7 +412,7 @@ func TestViewService_RegisterNodes(t *testing.T) {
 				ua.NewStringNodeID(ns.ID(), "nonexistent"),
 			},
 		}
-		resp, err := svc.RegisterNodes(nil, req, 2)
+		resp, err := svc.RegisterNodes(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		regResp := resp.(*ua.RegisterNodesResponse)
@@ -424,7 +425,7 @@ func TestViewService_RegisterNodes(t *testing.T) {
 			RequestHeader:   reqHeader(),
 			NodesToRegister: []*ua.NodeID{},
 		}
-		resp, err := svc.RegisterNodes(nil, req, 3)
+		resp, err := svc.RegisterNodes(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		regResp := resp.(*ua.RegisterNodesResponse)
@@ -432,7 +433,7 @@ func TestViewService_RegisterNodes(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.RegisterNodes(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.RegisterNodes(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -449,7 +450,7 @@ func TestViewService_UnregisterNodes(t *testing.T) {
 				ua.NewStringNodeID(ns.ID(), "rw_int32"),
 			},
 		}
-		resp, err := svc.UnregisterNodes(nil, req, 1)
+		resp, err := svc.UnregisterNodes(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		unregResp := resp.(*ua.UnregisterNodesResponse)
@@ -461,7 +462,7 @@ func TestViewService_UnregisterNodes(t *testing.T) {
 			RequestHeader:     reqHeader(),
 			NodesToUnregister: []*ua.NodeID{},
 		}
-		resp, err := svc.UnregisterNodes(nil, req, 2)
+		resp, err := svc.UnregisterNodes(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		unregResp := resp.(*ua.UnregisterNodesResponse)
@@ -469,7 +470,7 @@ func TestViewService_UnregisterNodes(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.UnregisterNodes(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.UnregisterNodes(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }

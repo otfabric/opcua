@@ -38,7 +38,7 @@ func TestMethodService_Call(t *testing.T) {
 				InputArguments: []*ua.Variant{ua.MustVariant(int32(42))},
 			}},
 		}
-		resp, err := svc.Call(nil, req, 1)
+		resp, err := svc.Call(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		callResp := resp.(*ua.CallResponse)
@@ -56,7 +56,7 @@ func TestMethodService_Call(t *testing.T) {
 				MethodID: ua.NewStringNodeID(ns.ID(), "nonexistent_method"),
 			}},
 		}
-		resp, err := svc.Call(nil, req, 2)
+		resp, err := svc.Call(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		callResp := resp.(*ua.CallResponse)
@@ -72,7 +72,7 @@ func TestMethodService_Call(t *testing.T) {
 				MethodID: methodID,
 			}},
 		}
-		resp, err := svc.Call(nil, req, 3)
+		resp, err := svc.Call(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		callResp := resp.(*ua.CallResponse)
@@ -81,7 +81,7 @@ func TestMethodService_Call(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.Call(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.Call(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }

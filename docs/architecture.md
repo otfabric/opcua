@@ -121,8 +121,10 @@ SecureChannel.SendResponseWithContext()
 The handler signature is:
 
 ```go
-type Handler func(*uasc.SecureChannel, ua.Request, uint32) (ua.Response, error)
+type Handler func(ctx context.Context, sc *uasc.SecureChannel, req ua.Request, reqID uint32) (ua.Response, error)
 ```
+
+Handlers receive a request-scoped `context.Context` for cancellation and timeouts; use it for downstream calls (e.g. access control, method handlers) where applicable.
 
 Service handlers are registered at server construction for: Discovery, Session, View, Attribute, Method, Subscription, MonitoredItem, Query, and NodeManagement.
 

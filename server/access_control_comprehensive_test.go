@@ -74,7 +74,7 @@ func TestAccessControl_NodeSpecific_ReadAllowed(t *testing.T) {
 			{NodeID: allowedNodeID, AttributeID: ua.AttributeIDValue},
 		},
 	}
-	resp, err := svc.Read(nil, req, 1)
+	resp, err := svc.Read(context.Background(), nil, req, 1)
 	require.NoError(t, err)
 
 	readResp := resp.(*ua.ReadResponse)
@@ -97,7 +97,7 @@ func TestAccessControl_NodeSpecific_ReadDenied(t *testing.T) {
 			{NodeID: deniedNodeID, AttributeID: ua.AttributeIDValue},
 		},
 	}
-	resp, err := svc.Read(nil, req, 1)
+	resp, err := svc.Read(context.Background(), nil, req, 1)
 	require.NoError(t, err)
 
 	readResp := resp.(*ua.ReadResponse)
@@ -121,7 +121,7 @@ func TestAccessControl_NodeSpecific_MixedReadResults(t *testing.T) {
 			{NodeID: deniedNodeID, AttributeID: ua.AttributeIDValue},
 		},
 	}
-	resp, err := svc.Read(nil, req, 1)
+	resp, err := svc.Read(context.Background(), nil, req, 1)
 	require.NoError(t, err)
 
 	readResp := resp.(*ua.ReadResponse)
@@ -149,7 +149,7 @@ func TestAccessControl_ReadOnly_WriteBlocked(t *testing.T) {
 			},
 		},
 	}
-	resp, err := svc.Write(nil, req, 1)
+	resp, err := svc.Write(context.Background(), nil, req, 1)
 	require.NoError(t, err)
 
 	writeResp := resp.(*ua.WriteResponse)
@@ -169,7 +169,7 @@ func TestAccessControl_ReadOnly_ReadAllowed(t *testing.T) {
 			{NodeID: ua.NewStringNodeID(ns.ID(), "rw_int32"), AttributeID: ua.AttributeIDValue},
 		},
 	}
-	resp, err := svc.Read(nil, req, 1)
+	resp, err := svc.Read(context.Background(), nil, req, 1)
 	require.NoError(t, err)
 
 	readResp := resp.(*ua.ReadResponse)
@@ -193,7 +193,7 @@ func TestAccessControl_ReadOnly_BrowseAllowed(t *testing.T) {
 			ResultMask:      uint32(ua.BrowseResultMaskAll),
 		}},
 	}
-	resp, err := svc.Browse(nil, req, 1)
+	resp, err := svc.Browse(context.Background(), nil, req, 1)
 	require.NoError(t, err)
 
 	browseResp := resp.(*ua.BrowseResponse)
@@ -224,7 +224,7 @@ func TestAccessControl_ReadOnly_CallBlocked(t *testing.T) {
 			MethodID: methodID,
 		}},
 	}
-	resp, err := svc.Call(nil, req, 1)
+	resp, err := svc.Call(context.Background(), nil, req, 1)
 	require.NoError(t, err)
 
 	callResp := resp.(*ua.CallResponse)

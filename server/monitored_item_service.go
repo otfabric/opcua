@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"sync"
@@ -151,7 +152,7 @@ type MonitoredItem struct {
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.12.2
-func (s *MonitoredItemService) CreateMonitoredItems(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *MonitoredItemService) CreateMonitoredItems(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.SubService.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.CreateMonitoredItemsRequest](r)
@@ -235,7 +236,7 @@ func (s *MonitoredItemService) CreateMonitoredItems(sc *uasc.SecureChannel, r ua
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.12.3
-func (s *MonitoredItemService) ModifyMonitoredItems(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *MonitoredItemService) ModifyMonitoredItems(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.SubService.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.ModifyMonitoredItemsRequest](r)
@@ -300,7 +301,7 @@ func (s *MonitoredItemService) ModifyMonitoredItems(sc *uasc.SecureChannel, r ua
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.12.4
-func (s *MonitoredItemService) SetMonitoringMode(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *MonitoredItemService) SetMonitoringMode(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.SubService.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.SetMonitoringModeRequest](r)
@@ -346,7 +347,7 @@ func (s *MonitoredItemService) SetMonitoringMode(sc *uasc.SecureChannel, r ua.Re
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.12.5
-func (s *MonitoredItemService) SetTriggering(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *MonitoredItemService) SetTriggering(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.SubService.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.SetTriggeringRequest](r)
@@ -402,7 +403,7 @@ func (s *MonitoredItemService) SetTriggering(sc *uasc.SecureChannel, r ua.Reques
 }
 
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.12.6
-func (s *MonitoredItemService) DeleteMonitoredItems(sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
+func (s *MonitoredItemService) DeleteMonitoredItems(ctx context.Context, sc *uasc.SecureChannel, r ua.Request, reqID uint32) (ua.Response, error) {
 	s.SubService.srv.cfg.logger.Debugf("handling request type=%T", r)
 
 	req, err := safeReq[*ua.DeleteMonitoredItemsRequest](r)

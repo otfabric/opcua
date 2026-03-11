@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -41,7 +42,7 @@ func TestSubscriptionService_Republish(t *testing.T) {
 			SubscriptionID:           sub.ID,
 			RetransmitSequenceNumber: 1,
 		}
-		resp, err := svc.Republish(nil, req, 1)
+		resp, err := svc.Republish(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		repResp := resp.(*ua.RepublishResponse)
@@ -60,7 +61,7 @@ func TestSubscriptionService_Republish(t *testing.T) {
 			SubscriptionID:           sub.ID,
 			RetransmitSequenceNumber: 5,
 		}
-		resp, err := svc.Republish(nil, req, 2)
+		resp, err := svc.Republish(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		repResp := resp.(*ua.RepublishResponse)
@@ -75,7 +76,7 @@ func TestSubscriptionService_Republish(t *testing.T) {
 			SubscriptionID:           999,
 			RetransmitSequenceNumber: 1,
 		}
-		resp, err := svc.Republish(nil, req, 3)
+		resp, err := svc.Republish(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		repResp := resp.(*ua.RepublishResponse)
@@ -83,7 +84,7 @@ func TestSubscriptionService_Republish(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.Republish(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.Republish(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -98,7 +99,7 @@ func TestSubscriptionService_TransferSubscriptions(t *testing.T) {
 			SubscriptionIDs:   []uint32{sub.ID},
 			SendInitialValues: false,
 		}
-		resp, err := svc.TransferSubscriptions(nil, req, 1)
+		resp, err := svc.TransferSubscriptions(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		transResp := resp.(*ua.TransferSubscriptionsResponse)
@@ -113,7 +114,7 @@ func TestSubscriptionService_TransferSubscriptions(t *testing.T) {
 			SubscriptionIDs:   []uint32{999},
 			SendInitialValues: false,
 		}
-		resp, err := svc.TransferSubscriptions(nil, req, 2)
+		resp, err := svc.TransferSubscriptions(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		transResp := resp.(*ua.TransferSubscriptionsResponse)
@@ -127,7 +128,7 @@ func TestSubscriptionService_TransferSubscriptions(t *testing.T) {
 			SubscriptionIDs:   []uint32{sub.ID, 999},
 			SendInitialValues: false,
 		}
-		resp, err := svc.TransferSubscriptions(nil, req, 3)
+		resp, err := svc.TransferSubscriptions(context.Background(), nil, req, 3)
 		require.NoError(t, err)
 
 		transResp := resp.(*ua.TransferSubscriptionsResponse)
@@ -137,7 +138,7 @@ func TestSubscriptionService_TransferSubscriptions(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.TransferSubscriptions(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.TransferSubscriptions(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }

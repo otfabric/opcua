@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/otfabric/opcua/ua"
@@ -23,7 +24,7 @@ func TestAttributeService_Read(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Read(nil, req, 1)
+		resp, err := svc.Read(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		readResp, ok := resp.(*ua.ReadResponse)
@@ -40,7 +41,7 @@ func TestAttributeService_Read(t *testing.T) {
 				{NodeID: ua.NewStringNodeID(ns.ID(), "rw_float64"), AttributeID: ua.AttributeIDValue},
 			},
 		}
-		resp, err := svc.Read(nil, req, 1)
+		resp, err := svc.Read(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		readResp := resp.(*ua.ReadResponse)
@@ -56,7 +57,7 @@ func TestAttributeService_Read(t *testing.T) {
 				{NodeID: ua.NewStringNodeID(99, "nonexistent"), AttributeID: ua.AttributeIDValue},
 			},
 		}
-		resp, err := svc.Read(nil, req, 1)
+		resp, err := svc.Read(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		readResp := resp.(*ua.ReadResponse)
@@ -71,7 +72,7 @@ func TestAttributeService_Read(t *testing.T) {
 				{NodeID: ua.NewStringNodeID(ns.ID(), "does_not_exist"), AttributeID: ua.AttributeIDValue},
 			},
 		}
-		resp, err := svc.Read(nil, req, 1)
+		resp, err := svc.Read(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		readResp := resp.(*ua.ReadResponse)
@@ -86,7 +87,7 @@ func TestAttributeService_Read(t *testing.T) {
 				{NodeID: ua.NewStringNodeID(ns.ID(), "no_access"), AttributeID: ua.AttributeIDValue},
 			},
 		}
-		resp, err := svc.Read(nil, req, 1)
+		resp, err := svc.Read(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		readResp := resp.(*ua.ReadResponse)
@@ -101,7 +102,7 @@ func TestAttributeService_Read(t *testing.T) {
 				{NodeID: ua.NewStringNodeID(ns.ID(), "rw_int32"), AttributeID: ua.AttributeIDBrowseName},
 			},
 		}
-		resp, err := svc.Read(nil, req, 1)
+		resp, err := svc.Read(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		readResp := resp.(*ua.ReadResponse)
@@ -112,7 +113,7 @@ func TestAttributeService_Read(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.Read(nil, &ua.WriteRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.Read(context.Background(), nil, &ua.WriteRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -136,7 +137,7 @@ func TestAttributeService_Write(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Write(nil, req, 1)
+		resp, err := svc.Write(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		writeResp := resp.(*ua.WriteResponse)
@@ -150,7 +151,7 @@ func TestAttributeService_Write(t *testing.T) {
 				{NodeID: ua.NewStringNodeID(ns.ID(), "rw_int32"), AttributeID: ua.AttributeIDValue},
 			},
 		}
-		readResp, err := svc.Read(nil, readReq, 2)
+		readResp, err := svc.Read(context.Background(), nil, readReq, 2)
 		require.NoError(t, err)
 		rr := readResp.(*ua.ReadResponse)
 		assert.Equal(t, int32(100), rr.Results[0].Value.Value())
@@ -170,7 +171,7 @@ func TestAttributeService_Write(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Write(nil, req, 1)
+		resp, err := svc.Write(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		writeResp := resp.(*ua.WriteResponse)
@@ -192,7 +193,7 @@ func TestAttributeService_Write(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Write(nil, req, 1)
+		resp, err := svc.Write(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		writeResp := resp.(*ua.WriteResponse)
@@ -214,7 +215,7 @@ func TestAttributeService_Write(t *testing.T) {
 				},
 			},
 		}
-		resp, err := svc.Write(nil, req, 1)
+		resp, err := svc.Write(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		writeResp := resp.(*ua.WriteResponse)
@@ -235,7 +236,7 @@ func TestAttributeService_HistoryRead(t *testing.T) {
 				{NodeID: ua.NewStringNodeID(2, "rw_float64")},
 			},
 		}
-		resp, err := svc.HistoryRead(nil, req, 1)
+		resp, err := svc.HistoryRead(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		histResp := resp.(*ua.HistoryReadResponse)
@@ -250,7 +251,7 @@ func TestAttributeService_HistoryRead(t *testing.T) {
 			RequestHeader: reqHeader(),
 			NodesToRead:   []*ua.HistoryReadValueID{},
 		}
-		resp, err := svc.HistoryRead(nil, req, 2)
+		resp, err := svc.HistoryRead(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		histResp := resp.(*ua.HistoryReadResponse)
@@ -259,7 +260,7 @@ func TestAttributeService_HistoryRead(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.HistoryRead(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.HistoryRead(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }
@@ -273,7 +274,7 @@ func TestAttributeService_HistoryUpdate(t *testing.T) {
 			RequestHeader:        reqHeader(),
 			HistoryUpdateDetails: []*ua.ExtensionObject{ua.NewExtensionObject(nil)},
 		}
-		resp, err := svc.HistoryUpdate(nil, req, 1)
+		resp, err := svc.HistoryUpdate(context.Background(), nil, req, 1)
 		require.NoError(t, err)
 
 		histResp := resp.(*ua.HistoryUpdateResponse)
@@ -287,7 +288,7 @@ func TestAttributeService_HistoryUpdate(t *testing.T) {
 			RequestHeader:        reqHeader(),
 			HistoryUpdateDetails: []*ua.ExtensionObject{},
 		}
-		resp, err := svc.HistoryUpdate(nil, req, 2)
+		resp, err := svc.HistoryUpdate(context.Background(), nil, req, 2)
 		require.NoError(t, err)
 
 		histResp := resp.(*ua.HistoryUpdateResponse)
@@ -296,7 +297,7 @@ func TestAttributeService_HistoryUpdate(t *testing.T) {
 	})
 
 	t.Run("wrong request type", func(t *testing.T) {
-		_, err := svc.HistoryUpdate(nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
+		_, err := svc.HistoryUpdate(context.Background(), nil, &ua.ReadRequest{RequestHeader: reqHeader()}, 1)
 		assert.Error(t, err)
 	})
 }

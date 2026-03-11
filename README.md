@@ -265,6 +265,16 @@ Run any example:
 go run examples/datetime/datetime.go -endpoint opc.tcp://localhost:4840
 ```
 
+## Testing and production readiness
+
+- **Unit tests**: `make test` (includes race detector).
+- **Coverage**: `make coverage` writes `coverage.out`; `make cover` opens the report.
+- **Integration tests** (tag-gated): `make integration` (Python client vs Go server), `make selfintegration` (Go client vs in-process server). These are not run by `go test ./...` by default.
+- **Fuzz tests**: see `ua/fuzz_test.go` for Variant and NodeID decoding.
+- **Linting**: `make lint` (staticcheck), `make lint-ci` (golangci-lint).
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development and PR workflow.
+
 ## Protocol Support
 
 | Layer | Protocol | Supported |

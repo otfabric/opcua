@@ -13,7 +13,9 @@ import (
 	"github.com/otfabric/opcua/uasc"
 )
 
-type Handler func(*uasc.SecureChannel, ua.Request, uint32) (ua.Response, error)
+// Handler processes a service request. ctx is derived from the request and can be used
+// for cancellation and timeouts; handlers should use it for downstream calls where applicable.
+type Handler func(ctx context.Context, sc *uasc.SecureChannel, req ua.Request, reqID uint32) (ua.Response, error)
 
 func (s *Server) initHandlers() {
 	// s.registerHandlerFunc(id.ServiceFault_Encoding_DefaultBinary, handleServiceFault)
@@ -119,7 +121,7 @@ func (s *Server) handleService(ctx context.Context, sc *uasc.SecureChannel, reqI
 	typeID := ua.ServiceTypeID(req)
 	h, ok := s.handlers[typeID]
 	if ok {
-		resp, err = h(sc, req, reqID)
+		resp, err = h(ctx, sc, req, reqID)
 	} else {
 		if typeID == 0 {
 			s.cfg.logger.Warnf("unknown service type=%T", req)
