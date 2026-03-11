@@ -663,6 +663,15 @@ func (c *Client) Dial(ctx context.Context) error {
 	}
 	c.setSecureChannel(sc)
 
+	// Validate the server certificate configured via SecurityFromEndpoint
+	// or RemoteCertificate before proceeding.
+	if err := c.cfg.validateServerCertificate(c.cfg.sechan.RemoteCertificate, c.cfg.sechan.SecurityMode); err != nil {
+		sc.Close()
+		conn.Close()
+		c.setSecureChannel(nil)
+		return err
+	}
+
 	return nil
 }
 
@@ -879,6 +888,11 @@ func (c *Client) CreateSession(ctx context.Context, cfg *uasc.SessionConfig) (*S
 		err := sc.VerifySessionSignature(res.ServerCertificate, nonce, res.ServerSignature.Signature)
 		if err != nil {
 			return fmt.Errorf("opcua: verify session signature: %w", err)
+		}
+
+		// Validate the server certificate from the CreateSession response.
+		if err := c.cfg.validateServerCertificate(res.ServerCertificate, c.cfg.sechan.SecurityMode); err != nil {
+			return err
 		}
 
 		// Ensure we have a valid identity token that the server will accept before trying to activate a session

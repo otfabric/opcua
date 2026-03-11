@@ -20,7 +20,7 @@ otfabric/opcua gives you everything needed to interact with OPC-UA servers or bu
 
 - **Client** — connect, browse, read, write, subscribe, call methods, read history
 - **Server** — host namespaces, expose variables, handle methods, emit events
-- **Security** — six encryption policies, certificate and username/password authentication
+- **Security** — six encryption policies, certificate and username/password authentication, server certificate validation with `TrustedCertificates()` and `InsecureSkipVerify()` options
 - **Subscriptions** — data-change and event monitoring with automatic publishing
 - **Retry & Reconnect** — exponential backoff and automatic session recovery
 - **Metrics** — pluggable instrumentation for request/response/error tracking

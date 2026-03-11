@@ -95,6 +95,8 @@ c, _ := opcua.NewClient(ep.EndpointURL,
 | `ApplicationName(name)` | Application name |
 | `WithConnStateHandler(fn)` | Connection state change callback |
 | `SecurityFromEndpoint(ep, auth)` | Auto-configure from discovered endpoint |
+| `InsecureSkipVerify()` | Skip server certificate validation (INSECURE, dev only) |
+| `TrustedCertificates(certs...)` | Add CA/self-signed certs to trust pool |
 
 ---
 

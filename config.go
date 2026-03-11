@@ -23,6 +23,13 @@ import (
 	"github.com/otfabric/opcua/uasc"
 )
 
+// serverCertValidator holds options for server certificate validation.
+type serverCertValidator struct {
+	insecureSkipVerify bool
+	trustedCerts       *x509.CertPool
+	trustedCertsList   []*x509.Certificate
+}
+
 const (
 	DefaultDialTimeout = 10 * time.Second
 )
@@ -67,6 +74,7 @@ type Config struct {
 	metrics             ClientMetrics
 	retryPolicy         RetryPolicy
 	skipNamespaceUpdate bool
+	certValidator       serverCertValidator
 }
 
 func DefaultDialer() *uacp.Dialer {
@@ -657,4 +665,95 @@ func WithMetrics(m ClientMetrics) Option {
 		cfg.metrics = m
 		return nil
 	}
+}
+
+// InsecureSkipVerify disables server certificate validation.
+// When set, the client still parses the server certificate to extract the
+// public key (required for signing and encryption), but does not verify the
+// trust chain, expiration, or application URI.
+//
+// This is INSECURE and should only be used for development and testing.
+func InsecureSkipVerify() Option {
+	return func(cfg *Config) error {
+		cfg.certValidator.insecureSkipVerify = true
+		return nil
+	}
+}
+
+// TrustedCertificates adds CA or self-signed certificates to the trust pool
+// used to validate the server certificate. The provided certificates are
+// merged with the system CA pool. If the system pool is unavailable, only
+// the provided certificates are trusted.
+//
+// Use this to trust self-signed server certificates or private CAs without
+// disabling all validation via InsecureSkipVerify.
+func TrustedCertificates(certs ...*x509.Certificate) Option {
+	return func(cfg *Config) error {
+		if cfg.certValidator.trustedCerts == nil {
+			cfg.certValidator.trustedCerts = x509.NewCertPool()
+		}
+		for _, c := range certs {
+			cfg.certValidator.trustedCerts.AddCert(c)
+			cfg.certValidator.trustedCertsList = append(cfg.certValidator.trustedCertsList, c)
+		}
+		return nil
+	}
+}
+
+// validateServerCertificate validates a DER-encoded server certificate
+// against the configured trust settings. It checks:
+//   - Trust chain (system CA pool + user-supplied trusted certificates)
+//   - Expiration / not-yet-valid
+//   - Key usage (DigitalSignature, KeyEncipherment)
+//
+// If insecureSkipVerify is set the function returns nil immediately.
+// If securityMode is None, no validation is performed.
+func (cfg *Config) validateServerCertificate(der []byte, securityMode ua.MessageSecurityMode) error {
+	if securityMode == ua.MessageSecurityModeNone {
+		return nil
+	}
+
+	if cfg.certValidator.insecureSkipVerify {
+		return nil
+	}
+
+	if len(der) == 0 {
+		return nil
+	}
+
+	cert, err := x509.ParseCertificate(der)
+	if err != nil {
+		return fmt.Errorf("opcua: server certificate validation failed: %w", err)
+	}
+
+	// Build verification options.
+	roots, err := x509.SystemCertPool()
+	if err != nil {
+		// System pool unavailable (e.g. some stripped containers).
+		roots = x509.NewCertPool()
+	}
+	// Merge user-supplied trusted certs into root pool so self-signed
+	// server certificates and private CAs are accepted.
+	for _, c := range cfg.certValidator.trustedCertsList {
+		roots.AddCert(c)
+	}
+
+	opts := x509.VerifyOptions{
+		Roots:     roots,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+	}
+
+	if _, err := cert.Verify(opts); err != nil {
+		return fmt.Errorf("opcua: server certificate validation failed: %w", err)
+	}
+
+	// Verify key usage bits. OPC UA servers should have DigitalSignature and
+	// KeyEncipherment. We only warn here because many OPC UA test servers
+	// and self-signed certs don't set key usage properly.
+	const requiredUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment
+	if cert.KeyUsage != 0 && cert.KeyUsage&requiredUsage != requiredUsage {
+		cfg.logger.Warnf("opcua: server certificate missing recommended key usage bits (DigitalSignature, KeyEncipherment)")
+	}
+
+	return nil
 }

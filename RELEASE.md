@@ -1,3 +1,83 @@
+# Release v0.1.4
+
+**Date:** 2026-03-11
+**Previous release:** v0.1.3
+
+## Summary
+
+Adds server certificate validation infrastructure and two new client options:
+`InsecureSkipVerify()` and `TrustedCertificates()`. When `SecurityMode` is
+`Sign` or `SignAndEncrypt`, the client now validates the server certificate by
+default. Use `TrustedCertificates()` to trust self-signed servers or private
+CAs, or `InsecureSkipVerify()` to disable validation for development.
+
+## Client: Server Certificate Validation
+
+The SDK previously performed no X.509 trust-chain validation of the server's
+certificate — it parsed the certificate only to extract the RSA public key for
+signing and encryption. This release adds opt-in validation and a deprecation
+path toward secure-by-default behavior.
+
+### New Options
+
+| Option | Description |
+|--------|-------------|
+| `TrustedCertificates(certs ...*x509.Certificate)` | Add CA or self-signed certificates to the trust pool. Merged with the system CA pool. Enables full validation (chain, expiry, key usage). |
+| `InsecureSkipVerify()` | Disable all server certificate validation. Certificate is still parsed for its public key. **INSECURE — development only.** |
+
+### Validation Checks (when `TrustedCertificates` is configured)
+
+| Check | Description |
+|-------|-------------|
+| **Trust chain** | Verifies the certificate chains to a trusted root CA (system pool + user-supplied certs) |
+| **Expiration** | Rejects expired or not-yet-valid certificates |
+| **Key usage** | Warns if `DigitalSignature` / `KeyEncipherment` bits are missing |
+
+### Validation Points
+
+Server certificate validation runs at two points in the connection flow:
+
+- **`Dial()`** — validates `RemoteCertificate` (set via `SecurityFromEndpoint`
+  or `RemoteCertificate` option) after `OpenSecureChannel`
+- **`CreateSession()`** — validates `ServerCertificate` from the
+  `CreateSessionResponse` after verifying the session signature
+
+### Behavioral Summary
+
+| Scenario | Certificate check | How to configure |
+|----------|------------------|------------------|
+| `SecurityMode == None` | No certificate exchanged, nothing to validate | Default |
+| `Sign` or `SignAndEncrypt` (default) | Full validation: chain, expiry, key usage | Default |
+| `Sign` or `SignAndEncrypt` + self-signed server | Fails unless cert added to trust pool | `TrustedCertificates(serverCACert)` |
+| `Sign` or `SignAndEncrypt` + skip verify | No validation, just parse for public key | `InsecureSkipVerify()` |
+
+### Config Changes
+
+Added `serverCertValidator` to the internal `Config` struct:
+
+```go
+type serverCertValidator struct {
+    insecureSkipVerify bool
+    trustedCerts       *x509.CertPool
+    trustedCertsList   []*x509.Certificate
+}
+```
+
+## Documentation
+
+- **API.md** — added `InsecureSkipVerify()` and `TrustedCertificates()` to the
+  options table
+- **docs/security.md** — new "Server Certificate Validation" section with
+  usage examples, trust configuration, and dev-mode skip
+- **docs/client-guide.md** — added new options to the client options table
+- **README.md** — updated security feature description
+
+## Files Changed
+
+6 files changed. Hand-written Go: 3 files (config.go, client.go, config_test.go).
+
+---
+
 # Release v0.1.3
 
 **Date:** 2026-03-11

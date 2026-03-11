@@ -326,6 +326,56 @@ The `DefaultAccessController` allows all operations. Override it to enforce your
 
 ---
 
+## Server Certificate Validation
+
+When connecting with `Sign` or `SignAndEncrypt` security mode, the client
+validates the server's X.509 certificate by default.
+
+### Trusting Server Certificates
+
+If the server uses a certificate signed by a public CA already in the system
+trust store, no extra configuration is needed. For self-signed certificates or
+private CAs, add the CA certificate to the trust pool:
+
+```go
+// Load the CA certificate that signed the server's certificate
+caCert, _ := loadX509Cert("server-ca.pem")
+
+c, _ := opcua.NewClient(endpoint,
+    opcua.SecurityPolicy("Basic256Sha256"),
+    opcua.SecurityMode(ua.MessageSecurityModeSignAndEncrypt),
+    opcua.Certificate(clientCert),
+    opcua.PrivateKey(clientKey),
+    opcua.TrustedCertificates(caCert),
+)
+```
+
+`TrustedCertificates` accepts one or more `*x509.Certificate` values. They are merged with the system CA pool. The client then validates:
+
+| Check | Description |
+|-------|-------------|
+| **Trust chain** | Certificate must chain to a trusted root (system pool + supplied certs) |
+| **Expiration** | Rejects expired or not-yet-valid certificates |
+| **Key usage** | Warns if DigitalSignature / KeyEncipherment bits are missing |
+
+### Skipping Validation (Development Only)
+
+For development and testing with self-signed certificates where you don't have the CA:
+
+```go
+c, _ := opcua.NewClient(endpoint,
+    opcua.SecurityPolicy("Basic256Sha256"),
+    opcua.SecurityMode(ua.MessageSecurityModeSignAndEncrypt),
+    opcua.Certificate(cert),
+    opcua.PrivateKey(key),
+    opcua.InsecureSkipVerify(),
+)
+```
+
+> **Warning:** `InsecureSkipVerify` disables all certificate validation. The certificate is still parsed for its public key, but trust chain, expiration, and usage are not checked. Never use this in production.
+
+---
+
 ## Security Checklist
 
 - [ ] Use `MessageSecurityModeSignAndEncrypt` in production
@@ -335,6 +385,7 @@ The `DefaultAccessController` allows all operations. Override it to enforce your
 - [ ] Never use `SecurityPolicy#None` outside development
 - [ ] Always pair username/password auth with encryption
 - [ ] Set file permissions on private keys (`0600`)
+- [ ] Validate server certificates with `TrustedCertificates()` or use `InsecureSkipVerify()` explicitly
 - [ ] Implement `AccessController` for fine-grained server authorization
 - [ ] Monitor certificate expiration dates
 - [ ] Rotate certificates on a regular schedule

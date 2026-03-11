@@ -499,6 +499,8 @@ All option functions return `Option` and are passed to `NewClient`:
 | `WithMetrics(m ClientMetrics)` | Metrics handler |
 | `WithRetryPolicy(p RetryPolicy)` | Retry policy |
 | `WithLogger(l Logger)` | Logger |
+| `InsecureSkipVerify()` | Skip server certificate validation (INSECURE) |
+| `TrustedCertificates(certs ...*x509.Certificate)` | Add CA/self-signed certs to the trust pool |
 
 ### Helper
 

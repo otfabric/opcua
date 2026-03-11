@@ -1,10 +1,14 @@
 package opcua
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net"
 	"os"
 	"path/filepath"
@@ -825,6 +829,27 @@ func TestOptions(t *testing.T) {
 				}(),
 			},
 		},
+		{
+			name: `InsecureSkipVerify()`,
+			opt:  InsecureSkipVerify(),
+			cfg: &Config{
+				certValidator: serverCertValidator{
+					insecureSkipVerify: true,
+				},
+			},
+		},
+		{
+			name: `TrustedCertificates()`,
+			opt: func() Option {
+				x, _ := x509.ParseCertificate(certDER)
+				return TrustedCertificates(x)
+			}(),
+			cfg: &Config{
+				certValidator: serverCertValidator{
+					insecureSkipVerify: false,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -861,7 +886,162 @@ func TestOptions(t *testing.T) {
 			// Logger is not comparable via reflect.DeepEqual, so we verify it's set and clear for comparison.
 			require.NotNil(t, cfg.logger)
 			cfg.logger = nil
+
+			// certValidator contains *x509.CertPool and []*x509.Certificate which
+			// have unexported fields and don't compare via DeepEqual. Verify key
+			// properties manually and zero out for comparison.
+			require.Equal(t, tt.cfg.certValidator.insecureSkipVerify, cfg.certValidator.insecureSkipVerify)
+			if tt.cfg.certValidator.trustedCerts != nil || tt.cfg.certValidator.trustedCertsList != nil {
+				require.NotNil(t, cfg.certValidator.trustedCerts)
+				require.NotNil(t, cfg.certValidator.trustedCertsList)
+			} else if cfg.certValidator.trustedCerts != nil {
+				// TrustedCertificates was called — verify pool is populated
+				require.NotNil(t, cfg.certValidator.trustedCertsList)
+			}
+			cfg.certValidator = serverCertValidator{}
+			tt.cfg.certValidator = serverCertValidator{}
+
 			require.Equal(t, tt.cfg, cfg)
+		})
+	}
+}
+
+func TestValidateServerCertificate(t *testing.T) {
+	// Generate a self-signed CA certificate for testing.
+	caKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	caTemplate := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "Test CA"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(24 * time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+	caDER, err := x509.CreateCertificate(rand.Reader, caTemplate, caTemplate, &caKey.PublicKey, caKey)
+	require.NoError(t, err)
+	caCert, err := x509.ParseCertificate(caDER)
+	require.NoError(t, err)
+
+	// Generate a server certificate signed by the CA.
+	serverKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	serverTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject:      pkix.Name{CommonName: "Test Server"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	}
+	serverDER, err := x509.CreateCertificate(rand.Reader, serverTemplate, caTemplate, &serverKey.PublicKey, caKey)
+	require.NoError(t, err)
+
+	// Generate an expired server certificate signed by the CA.
+	expiredTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(3),
+		Subject:      pkix.Name{CommonName: "Expired Server"},
+		NotBefore:    time.Now().Add(-48 * time.Hour),
+		NotAfter:     time.Now().Add(-24 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+	}
+	expiredDER, err := x509.CreateCertificate(rand.Reader, expiredTemplate, caTemplate, &serverKey.PublicKey, caKey)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name         string
+		der          []byte
+		securityMode ua.MessageSecurityMode
+		cfg          *Config
+		wantErr      string
+	}{
+		{
+			name:         "SecurityModeNone skips validation",
+			der:          serverDER,
+			securityMode: ua.MessageSecurityModeNone,
+			cfg:          newConfig(),
+		},
+		{
+			name:         "InsecureSkipVerify skips validation",
+			der:          serverDER,
+			securityMode: ua.MessageSecurityModeSignAndEncrypt,
+			cfg: func() *Config {
+				c := newConfig()
+				c.certValidator.insecureSkipVerify = true
+				return c
+			}(),
+		},
+		{
+			name:         "no trust config rejects untrusted cert",
+			der:          serverDER,
+			securityMode: ua.MessageSecurityModeSign,
+			cfg:          newConfig(),
+			wantErr:      "opcua: server certificate validation failed:",
+		},
+		{
+			name:         "trusted CA validates successfully",
+			der:          serverDER,
+			securityMode: ua.MessageSecurityModeSignAndEncrypt,
+			cfg: func() *Config {
+				c := newConfig()
+				c.certValidator.trustedCerts = x509.NewCertPool()
+				c.certValidator.trustedCerts.AddCert(caCert)
+				c.certValidator.trustedCertsList = []*x509.Certificate{caCert}
+				return c
+			}(),
+		},
+		{
+			name:         "untrusted cert fails validation",
+			der:          serverDER,
+			securityMode: ua.MessageSecurityModeSignAndEncrypt,
+			cfg: func() *Config {
+				c := newConfig()
+				// Empty trust pool — server cert is not trusted.
+				c.certValidator.trustedCerts = x509.NewCertPool()
+				return c
+			}(),
+			wantErr: "opcua: server certificate validation failed:",
+		},
+		{
+			name:         "expired cert fails validation",
+			der:          expiredDER,
+			securityMode: ua.MessageSecurityModeSign,
+			cfg: func() *Config {
+				c := newConfig()
+				c.certValidator.trustedCerts = x509.NewCertPool()
+				c.certValidator.trustedCerts.AddCert(caCert)
+				c.certValidator.trustedCertsList = []*x509.Certificate{caCert}
+				return c
+			}(),
+			wantErr: "opcua: server certificate validation failed:",
+		},
+		{
+			name:         "invalid DER fails",
+			der:          []byte("not-a-certificate"),
+			securityMode: ua.MessageSecurityModeSign,
+			cfg:          newConfig(),
+			wantErr:      "opcua: server certificate validation failed:",
+		},
+		{
+			name:         "empty DER returns nil",
+			der:          nil,
+			securityMode: ua.MessageSecurityModeSign,
+			cfg:          newConfig(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.validateServerCertificate(tt.der, tt.securityMode)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
