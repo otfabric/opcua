@@ -5,34 +5,19 @@ import (
 	"log"
 	"testing"
 
-	"github.com/otfabric/opcua"
 	"github.com/otfabric/opcua/id"
 	"github.com/otfabric/opcua/server"
+	"github.com/otfabric/opcua/testutil"
 	"github.com/otfabric/opcua/ua"
 )
 
 func TestBrowse(t *testing.T) {
 	ctx := context.Background()
 
-	// start the server
-	s := server.New(
-		server.EndPoint("localhost", 4840),
-	)
-	populateServer(s)
-	if err := s.Start(ctx); err != nil {
-		t.Fatal(err)
-	}
-	defer s.Close()
+	srv, url := testutil.NewTestServer(t)
+	populateServer(srv)
 
-	// prepare the client
-	c, err := opcua.NewClient("opc.tcp://localhost:4840")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Connect(ctx); err != nil {
-		t.Fatal(err)
-	}
-	defer c.Close(ctx)
+	c := testutil.NewTestClient(t, url)
 
 	// browse the nodes (depth 7 for faster test)
 	nodeList, err := browseWithWalkLimit(ctx, c, c.Node(ua.MustParseNodeID("i=84")), 7)

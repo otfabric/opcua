@@ -38,9 +38,6 @@ func encode(val reflect.Value, name string) ([]byte, error) {
 
 	buf := NewBuffer(nil)
 	switch {
-	case val.Kind() == reflect.Ptr && val.IsNil():
-		// Optional field: nil pointer encodes as no bytes (avoid calling BinaryEncoder on nil).
-		return nil, nil
 	case isBinaryEncoder(val):
 		v := val.Interface().(BinaryEncoder)
 		return dump(v.Encode())

@@ -374,6 +374,12 @@ func (n *NodeID) Decode(b []byte) (int, error) {
 
 func (n *NodeID) Encode() ([]byte, error) {
 	buf := NewBuffer(nil)
+	if n == nil {
+		// OPC UA null NodeID: two-byte form id=0. Preserves wire layout for optional fields.
+		buf.WriteByte(byte(NodeIDTypeTwoByte))
+		buf.WriteByte(0)
+		return buf.Bytes(), buf.Error()
+	}
 	buf.WriteByte(byte(n.mask))
 
 	switch n.Type() {

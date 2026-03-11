@@ -14,10 +14,14 @@ type QualifiedName struct {
 }
 
 func (q *QualifiedName) Encode() ([]byte, error) {
-	if q == nil {
-		return nil, nil
-	}
 	buf := NewBuffer(nil)
+	if q == nil {
+		// OPC UA null QualifiedName: namespace 0, string length -1 (absent).
+		// Must emit fixed layout so struct field offsets are preserved.
+		buf.WriteUint16(0)
+		buf.WriteUint32(0xffffffff) // null string
+		return buf.Bytes(), buf.Error()
+	}
 	buf.WriteUint16(q.NamespaceIndex)
 	buf.WriteString(q.Name)
 	return buf.Bytes(), buf.Error()

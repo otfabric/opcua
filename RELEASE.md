@@ -1,3 +1,44 @@
+# Release v0.1.7
+
+**Date:** 2026-03-11
+**Previous release:** v0.1.6
+
+## Summary
+
+Fixes a **regression introduced in v0.1.5** that broke connection establishment
+(e.g. `opcuactl browse` or any client connecting with `--security-mode None`).
+The generic encoder no longer skips nil optional fields; nil is now encoded as
+the correct OPC UA null representation so message layout stays valid.
+
+## Bug fix: Encoder regression (nil optional fields)
+
+In v0.1.5 we changed `ua/encode.go` to skip nil pointer fields entirely
+(return `nil, nil`) to avoid calling `BinaryEncoder.Encode()` on a nil receiver.
+That broke the OPC UA binary wire format: the server expects **all fields at
+fixed offsets**. Omitting bytes for nil optional fields corrupted the message
+layout and caused "failed to open a new secure channel" / EOF during connect.
+
+- **`ua/encode.go`** — Reverted the early-exit that returned no bytes for any
+  nil pointer. Nil optional fields are no longer skipped.
+- **`ua/qualified_name.go`** — When the receiver is nil, `Encode()` now
+  returns the OPC UA null QualifiedName encoding (namespace 0 + string length
+  -1), i.e. 6 bytes, so struct field offsets are preserved.
+- **`ua/node_id.go`** — When the receiver is nil, `Encode()` now returns the
+  OPC UA null NodeID (two-byte form, id=0), i.e. 2 bytes, so optional NodeID
+  fields keep a fixed layout.
+
+Connection establishment and all messages with optional `*QualifiedName` or
+`*NodeID` fields now encode correctly.
+
+## Other changes
+
+- **testutil**: Test client uses longer `DialTimeout` and `RequestTimeout`
+  (30s) so tests have time to connect under load (e.g. race detector).
+- **examples/browse**: Test uses `testutil.NewTestServer` / `NewTestClient`
+  (dynamic port, shared timeouts); removed unused `join` helper (lint).
+
+---
+
 # Release v0.1.6
 
 **Date:** 2026-03-11

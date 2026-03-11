@@ -14,8 +14,16 @@ func TestQualifiedName_Encode_NilReceiver(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Encode failed: %v", err)
 	}
-	if b != nil {
-		t.Errorf("nil QualifiedName.Encode() should return nil bytes, got len=%d", len(b))
+	// OPC UA null QualifiedName: namespace 0 + string length -1 (0xFFFFFFFF).
+	// Must emit fixed layout so struct field offsets are preserved on the wire.
+	want := []byte{0x00, 0x00, 0xff, 0xff, 0xff, 0xff}
+	if len(b) != len(want) {
+		t.Fatalf("nil QualifiedName.Encode() should return 6-byte null encoding, got len=%d", len(b))
+	}
+	for i := range want {
+		if b[i] != want[i] {
+			t.Fatalf("nil QualifiedName.Encode() byte %d: got 0x%02x want 0x%02x", i, b[i], want[i])
+		}
 	}
 }
 
